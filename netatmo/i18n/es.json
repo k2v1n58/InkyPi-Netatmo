@@ -1,0 +1,140 @@
+{
+  "language_name": "Español",
+  "labels": {
+    "station_fallback": "Estación Meteorológica Netatmo",
+    "updated_at": "Actualizado a las {time}",
+    "today": "Hoy",
+    "humidity": "Humedad",
+    "co2": "CO2",
+    "pressure": "Presión",
+    "noise": "Ruido",
+    "dew_point": "Pto. de rocío",
+    "rain_1h": "Última 1h",
+    "rain_24h": "Últimas 24h",
+    "gusts": "Ráfagas",
+    "direction": "Dirección",
+    "indoor": "Interior",
+    "outdoor": "Exterior",
+    "rain": "Lluvia",
+    "wind": "Viento",
+    "moon": "Luna",
+    "forecast": "Pronóstico",
+    "min_max": "Mín / Máx",
+    "wind_rain": "Viento y Lluvia",
+    "outdoor_forecast": "Sensores y Pronóstico",
+    "indoor_monitoring": "Interior",
+    "past_24h": "Últimas 24h",
+    "current_rain": "Directo",
+    "wind_current": "Viento",
+    "last_refresh": "Última act.",
+    "now": "Ahora",
+    "graph_past": "Medido",
+    "graph_future": "Previsión",
+    "rain_forecast_6h": "Próx. 6h",
+    "stale": "Sin conexión - datos en caché"
+  },
+  "days_abbr": [
+    "Lun",
+    "Mar",
+    "Mié",
+    "Jue",
+    "Vie",
+    "Sáb",
+    "Dom"
+  ],
+  "cardinals": [
+    "N",
+    "NNE",
+    "NE",
+    "ENE",
+    "E",
+    "ESE",
+    "SE",
+    "SSE",
+    "S",
+    "SSO",
+    "SO",
+    "OSO",
+    "O",
+    "ONO",
+    "NO",
+    "NNO"
+  ],
+  "moon_phases": [
+    {
+      "threshold": 1.84,
+      "name": "Luna nueva",
+      "icon": "🌑"
+    },
+    {
+      "threshold": 5.53,
+      "name": "Luna creciente",
+      "icon": "🌒"
+    },
+    {
+      "threshold": 9.22,
+      "name": "Cuarto creciente",
+      "icon": "🌓"
+    },
+    {
+      "threshold": 12.91,
+      "name": "Gibosa creciente",
+      "icon": "🌔"
+    },
+    {
+      "threshold": 16.61,
+      "name": "Luna llena",
+      "icon": "🌕"
+    },
+    {
+      "threshold": 20.3,
+      "name": "Gibosa menguante",
+      "icon": "🌖"
+    },
+    {
+      "threshold": 23.99,
+      "name": "Cuarto menguante",
+      "icon": "🌗"
+    },
+    {
+      "threshold": 27.68,
+      "name": "Luna menguante",
+      "icon": "🌘"
+    },
+    {
+      "threshold": 29.54,
+      "name": "Luna nueva",
+      "icon": "🌑"
+    }
+  ],
+  "weather_codes": {
+    "0": "Despejado",
+    "1": "Mayormente despejado",
+    "2": "Parcialmente nublado",
+    "3": "Nublado",
+    "45": "Niebla",
+    "48": "Niebla engelante",
+    "51": "Llovizna ligera",
+    "53": "Llovizna moderada",
+    "55": "Llovizna densa",
+    "56": "Llovizna helada",
+    "57": "Llovizna helada densa",
+    "61": "Lluvia débil",
+    "63": "Lluvia moderada",
+    "65": "Lluvia fuerte",
+    "66": "Lluvia helada",
+    "67": "Lluvia helada fuerte",
+    "71": "Nieve débil",
+    "73": "Nieve moderada",
+    "75": "Nieve fuerte",
+    "77": "Granos de nieve",
+    "80": "Chubascos débiles",
+    "81": "Chubascos moderados",
+    "82": "Chubascos violentos",
+    "85": "Chubascos de nieve",
+    "86": "Chubascos de nieve fuertes",
+    "95": "Tormenta",
+    "96": "Tormenta con granizo",
+    "99": "Tormenta severa"
+  }
+}

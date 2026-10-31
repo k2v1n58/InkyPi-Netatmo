@@ -1,0 +1,6 @@
+{
+    "display_name": "Netatmo",
+    "id": "netatmo",
+    "class": "Netatmo",
+    "repository": "https://github.com/k2v1n58/InkyPi-Netatmo"
+}

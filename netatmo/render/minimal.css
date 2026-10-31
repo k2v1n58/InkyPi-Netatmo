@@ -1,0 +1,136 @@
+@charset "utf-8";
+/* =========================================================================
+   Netatmo - thème "Minimal" : typographie seule, filets fins, pas de cadres.
+   Noir et gris ; une seule couleur sert d'alerte (CO2). 1rem = 10px en 800x480.
+   ========================================================================= */
+
+:root {
+    --u: min(100vw / 800, 100vh / 480);
+    --ink: #111;
+    --ink-2: #555;
+    --ink-3: #8a8a8a;
+    --rule: #d6d6d6;
+    --good: #2f9e5b;
+    --fair: #e08a1e;
+    --bad: #d1342b;
+}
+@media (orientation: portrait) {
+    :root { --u: min(100vw / 480, 100vh / 800); }
+}
+
+html { font-size: calc(var(--u) * 10); height: 100%; }
+body {
+    height: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden;
+    background: #fff;
+    color: var(--ink);
+    font-family: "Jost Var", "Jost", "Segoe UI", Helvetica, Arial, sans-serif;
+    font-weight: 400;
+}
+.container { align-items: stretch; }
+small { font-size: 0.7em; color: var(--ink-3); font-weight: 400; }
+.mn-dim { color: var(--ink-3); }
+
+.mn {
+    width: 100%;
+    height: 100%;
+    padding: 1.2rem 1.6rem 1rem;
+    display: grid;
+    grid-template-columns: 38% 1fr;
+    grid-template-rows: auto minmax(0, 1fr) auto auto;
+    grid-template-areas:
+        "meta meta"
+        "now graph"
+        "forecast forecast"
+        "indoor indoor";
+    column-gap: 2.4rem;
+    row-gap: 1rem;
+}
+
+/* ---------- Ligne d'information ---------- */
+.mn-meta { grid-area: meta; display: flex; justify-content: space-between; align-items: center;
+           font-size: 1.15rem; color: var(--ink-2); }
+.mn-station { font-weight: 600; letter-spacing: 0.3rem; text-transform: uppercase; color: var(--ink); }
+.mn-meta-right { display: flex; align-items: center; gap: 1.6rem; }
+.mn-moon { display: inline-flex; align-items: center; gap: 0.4rem; }
+.mn-moon-icon { width: 1.8rem; height: 1.8rem; object-fit: contain; }
+.mn-stale { color: var(--bad); font-weight: 600; }
+
+/* ---------- Extérieur ---------- */
+.mn-now { grid-area: now; display: flex; flex-direction: column; justify-content: space-between; min-height: 0; }
+.mn-temp { display: flex; align-items: flex-start; line-height: 0.85; white-space: nowrap; }
+.mn-val { font-size: 10.5rem; font-weight: 200; letter-spacing: -0.4rem; }
+.mn-deg { font-size: 3rem; font-weight: 300; margin: 0.6rem 0 0 0.4rem; color: var(--ink-2); }
+.mn-trend { font-size: 3rem; font-weight: 300; margin: 0.6rem 0 0 0.6rem; color: var(--ink-3); }
+
+.mn-kv { margin: 0; display: grid; grid-template-columns: 1fr 1fr; column-gap: 1.6rem; }
+.mn-kv > div { display: flex; flex-direction: column; padding: 0.35rem 0; border-top: 0.1rem solid var(--rule); }
+.mn-kv dt { font-size: 0.95rem; letter-spacing: 0.12rem; text-transform: uppercase; color: var(--ink-3); }
+.mn-kv dd { margin: 0; font-size: 1.6rem; font-weight: 400; white-space: nowrap; }
+
+/* ---------- Graphique : un trait noir, rien d'autre ---------- */
+.mn-graph { grid-area: graph; display: flex; flex-direction: column; min-height: 0; }
+.mn-label, .mn-axis { display: flex; justify-content: space-between; font-size: 1rem; letter-spacing: 0.12rem;
+                      text-transform: uppercase; color: var(--ink-3); }
+.mn-axis span:nth-child(2) { color: var(--ink); }
+.graph-body { position: relative; flex: 1; min-height: 4rem; margin: 0.4rem 0; }
+.sparkline-svg { width: 100%; height: 100%; display: block; }
+.mn-graph .sparkline-svg path[fill="#d9480f"] { fill: #000; fill-opacity: 0.05; }
+.mn-graph .sparkline-svg path[stroke="#d9480f"] { stroke: var(--ink); stroke-width: 1.6; }
+.mn-graph .sparkline-svg path[stroke="#1c5fd4"] { stroke: var(--ink-3); stroke-width: 1.4; }
+.mn-graph .sparkline-svg rect { fill: var(--ink); fill-opacity: 0.12; }
+.gmark { position: absolute; transform: translate(-50%, -50%); line-height: 1; white-space: nowrap; }
+.gmark i { display: block; width: 0.6rem; height: 0.6rem; border-radius: 50%; background: var(--ink); }
+.gmark b { position: absolute; left: 50%; font-size: 1.15rem; font-weight: 500; transform: translate(-50%, -190%); }
+.gmark-now i { width: 0.9rem; height: 0.9rem; background: #fff; border: 0.2rem solid var(--ink); }
+.gmark-now b { font-weight: 600; transform: translate(-115%, -135%); }
+.gmark-now.gpos-upleft b { transform: translate(-118%, -150%); }
+.gmark-now.gpos-downleft b { transform: translate(-118%, 50%); }
+.gmark-now.gpos-upright b { transform: translate(10%, -110%); }
+.gmark-now.gpos-up b { transform: translate(-50%, -190%); }
+.gmark-min i, .gmark-max i { width: 0.5rem; height: 0.5rem; background: var(--ink-3); }
+.gmark-min b, .gmark-max b { color: var(--ink-2); font-weight: 400; }
+
+/* ---------- Prévisions : colonnes séparées par des filets ---------- */
+.mn-forecast { grid-area: forecast; display: flex; border-top: 0.1rem solid var(--rule); padding-top: 0.7rem; }
+.mn-day { flex: 1; display: flex; align-items: center; justify-content: center; gap: 0.8rem; min-width: 0; }
+.mn-day + .mn-day { border-left: 0.1rem solid var(--rule); }
+.mn-day-label { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.15rem; text-transform: uppercase; }
+.mn-day-icon { width: 3rem; height: 3rem; object-fit: contain; }
+.mn-day-temps { font-size: 1.7rem; font-weight: 400; white-space: nowrap; }
+.mn-day-rain { font-size: 1rem; color: var(--ink-3); }
+
+/* ---------- Intérieur ---------- */
+.mn-indoor { grid-area: indoor; display: grid; border-top: 0.1rem solid var(--rule); padding-top: 0.7rem; }
+.mn-indoor.cols-1 { grid-template-columns: 1fr; }
+.mn-indoor.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.mn-indoor.cols-3 { grid-template-columns: repeat(3, 1fr); }
+.mn-indoor.cols-4 { grid-template-columns: repeat(4, 1fr); }
+.mn-room { display: flex; flex-direction: column; padding: 0 1rem; min-width: 0; }
+.mn-room:first-child { padding-left: 0; }
+.mn-room + .mn-room { border-left: 0.1rem solid var(--rule); }
+.mn-room-name { font-size: 1rem; font-weight: 600; letter-spacing: 0.15rem; text-transform: uppercase; color: var(--ink-2);
+                white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mn-room-temp { font-size: 3.2rem; font-weight: 300; line-height: 1.05; letter-spacing: -0.1rem; }
+.mn-room-sub { display: flex; gap: 1rem; font-size: 1.2rem; color: var(--ink-2); white-space: nowrap; }
+.mn-co2 { display: inline-flex; align-items: center; gap: 0.4rem; }
+.dot { display: inline-block; width: 0.8rem; height: 0.8rem; border-radius: 50%; background: var(--ink-3); }
+.dot.co2-good { background: var(--good); }
+.dot.co2-fair { background: var(--fair); }
+.dot.co2-poor { background: var(--bad); }
+
+/* ---------- Portrait ---------- */
+@media (orientation: portrait) {
+    .mn {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+        grid-template-areas: "meta" "now" "graph" "forecast" "indoor";
+    }
+    .mn-now { gap: 0.8rem; }
+    .mn-kv { grid-template-columns: repeat(3, 1fr); }
+    .mn-day { flex-direction: column; gap: 0.2rem; }
+    .mn-indoor.cols-3, .mn-indoor.cols-4 { grid-template-columns: repeat(2, 1fr); row-gap: 0.8rem; }
+    .mn-indoor.cols-3 .mn-room:nth-child(odd), .mn-indoor.cols-4 .mn-room:nth-child(odd) { padding-left: 0; border-left: 0; }
+}

@@ -1,0 +1,104 @@
+{% extends "plugin.html" %}
+
+{% macro ico(name, cls="ico") -%}
+<img class="{{ cls }}" src="{{ icons_dir }}/{{ name }}.png" alt="">
+{%- endmacro %}
+
+{% block content %}
+<div class="poster">
+
+    {# ---------- Panneau gauche : extérieur, en inversé ---------- #}
+    <aside class="panel">
+        {% if outdoor %}
+        <div class="panel-top">
+            <span class="panel-name">{{ outdoor.name }}</span>
+            {% if outdoor.icon %}{{ ico(outdoor.icon, "panel-icon") }}{% endif %}
+        </div>
+        <div class="panel-temp">
+            <span class="panel-val">{{ outdoor.temp }}</span><span class="panel-unit">{{ units.temp }}</span>
+            {% if outdoor.trend %}<span class="panel-trend trend-{{ outdoor.trend_dir }}">{{ outdoor.trend }}</span>{% endif %}
+        </div>
+        <dl class="panel-stats">
+            <div><dt>{{ t.min_max }}</dt><dd>{{ outdoor.min }}° / {{ outdoor.max }}°</dd></div>
+            <div><dt>{{ t.humidity }}</dt><dd>{{ outdoor.humidity }}%</dd></div>
+            {% if outdoor.dew_point != "--" %}<div><dt>{{ t.dew_point }}</dt><dd>{{ outdoor.dew_point }}°</dd></div>{% endif %}
+            {% if pressure and pressure.value != "--" %}
+            <div><dt>{{ t.pressure }}</dt><dd>{{ pressure.value }} {{ units.pressure }} <span class="trend-{{ pressure.trend_dir }}">{{ pressure.trend }}</span></dd></div>
+            {% endif %}
+        </dl>
+        {% else %}
+        <div class="panel-empty">{{ t.station_fallback }}</div>
+        {% endif %}
+        <div class="panel-foot">
+            {% if moon %}<span class="panel-moon" title="{{ moon.name }} {{ moon.illumination }}%">{{ ico(moon.icon, "ico-moon") }}</span>{% endif %}
+            {% if show_refresh_time %}<span class="panel-refresh">{{ last_refresh_time }}</span>{% endif %}
+            {% if stale %}<span class="panel-stale">{{ t.stale }}</span>{% endif %}
+        </div>
+    </aside>
+
+    {# ---------- Colonne droite : à plat, séparée par des filets ---------- #}
+    <main class="main">
+
+        {% if sparkline %}
+        <section class="block block-graph">
+            <div class="block-head">
+                <span>{{ t.past_24h }} / +24h</span>
+                <span class="range">{{ sparkline.min }}° → {{ sparkline.max }}°</span>
+            </div>
+            <div class="graph-body">{{ sparkline.svg|safe }}{% for m in sparkline.markers %}<span class="gmark gmark-{{ m.kind }}{% if m.pos %} gpos-{{ m.pos }}{% endif %}" style="left: {{ m.x }}%; top: {{ m.y }}%;"><i></i><b>{{ m.label }}</b></span>{% endfor %}</div>
+            <div class="graph-foot"><span>-24h</span><span>-12h</span><b>{{ t.now }}</b><span>+12h</span><span>+24h</span></div>
+        </section>
+        {% endif %}
+
+        {% if wind or rain %}
+        <section class="block block-wr">
+            {% if wind %}
+            <div class="wr">
+                <div class="block-head"><span>{{ wind.name }}</span>{% if wind.dir %}<span class="range">{{ wind.dir }}</span>{% endif %}</div>
+                <div class="wr-line">{{ ico("wind", "ico-sm") }}<b>{{ wind.speed }}</b><span class="unit">{{ units.wind }}</span></div>
+                <div class="sub">{{ t.gusts }} <b>{{ wind.gust }}</b></div>
+            </div>
+            {% endif %}
+            {% if rain %}
+            <div class="wr">
+                <div class="block-head"><span>{{ rain.name }}</span></div>
+                <div class="wr-line"><b>{{ rain.rain_1h }}</b><span class="unit">{{ units.rain }} / {{ t.rain_1h }}</span></div>
+                <div class="sub">{{ t.rain_24h }} <b>{{ rain.rain_24h }}</b>{% if rain.forecast_6h %} · {{ t.rain_forecast_6h }} <b>{{ rain.forecast_6h }}</b>{% endif %}</div>
+            </div>
+            {% endif %}
+        </section>
+        {% endif %}
+
+        {% if forecast %}
+        <section class="block block-forecast">
+            {% for f in forecast %}
+            <div class="fday{% if loop.first %} fday-today{% endif %}">
+                <span class="fday-label">{{ f.date_label }}</span>
+                {{ ico(f.icon, "fday-icon") }}
+                <span class="fday-temps"><b>{{ f.temp_max }}°</b> <i>{{ f.temp_min }}°</i></span>
+                {% if f.rain_prob is not none %}<span class="fday-rain">{{ f.rain_prob }}%</span>{% endif %}
+            </div>
+            {% endfor %}
+        </section>
+        {% endif %}
+
+        {% if indoor %}
+        <section class="block block-indoor">
+            <div class="block-head"><span>{{ t.indoor_monitoring }}</span></div>
+            <table class="rooms n{{ indoor|length }}">
+                <colgroup><col style="width: 37%"><col style="width: 23%"><col style="width: 22%"><col style="width: 18%"></colgroup>
+                {% for s in indoor %}
+                <tr>
+                    <td class="r-name">{{ s.name }}{% if s.noise %} <small>({{ s.noise }} dB)</small>{% endif %}</td>
+                    <td class="r-temp"><b>{{ s.temp }}</b><span class="unit">{{ units.temp }}</span></td>
+                    <td><span class="pill co2-{{ s.co2_status }}">CO₂ {{ s.co2 }}</span></td>
+                    <td class="r-hum">{{ ico("humidity", "ico-xs") }}{{ s.humidity }}%</td>
+                </tr>
+                {% endfor %}
+            </table>
+        </section>
+        {% endif %}
+
+    </main>
+</div>
+{% endblock %}

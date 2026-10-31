@@ -1,0 +1,140 @@
+{
+  "language_name": "Deutsch",
+  "labels": {
+    "station_fallback": "Netatmo Wetterstation",
+    "updated_at": "Aktualisiert um {time}",
+    "today": "Heute",
+    "humidity": "Feuchtigkeit",
+    "co2": "CO2",
+    "pressure": "Luftdruck",
+    "noise": "Lärm",
+    "dew_point": "Taupunkt",
+    "rain_1h": "Letzte 1 Std.",
+    "rain_24h": "Letzte 24 Std.",
+    "gusts": "Böen",
+    "direction": "Richtung",
+    "indoor": "Innen",
+    "outdoor": "Außen",
+    "rain": "Regen",
+    "wind": "Wind",
+    "moon": "Mond",
+    "forecast": "Vorhersage",
+    "min_max": "Min / Max",
+    "wind_rain": "Wind & Regen",
+    "outdoor_forecast": "Sensoren & Vorhersage",
+    "indoor_monitoring": "Innenraum",
+    "past_24h": "Letzte 24 Std.",
+    "current_rain": "Aktuell",
+    "wind_current": "Wind",
+    "last_refresh": "Letzte Akt.",
+    "now": "Jetzt",
+    "graph_past": "Gemessen",
+    "graph_future": "Prognose",
+    "rain_forecast_6h": "Nächste 6h",
+    "stale": "Offline - Cache-Daten"
+  },
+  "days_abbr": [
+    "Mo",
+    "Di",
+    "Mi",
+    "Do",
+    "Fr",
+    "Sa",
+    "So"
+  ],
+  "cardinals": [
+    "N",
+    "NNO",
+    "NO",
+    "ONO",
+    "O",
+    "OSO",
+    "SO",
+    "SSO",
+    "S",
+    "SSW",
+    "SW",
+    "WSW",
+    "W",
+    "WNW",
+    "NW",
+    "NNW"
+  ],
+  "moon_phases": [
+    {
+      "threshold": 1.84,
+      "name": "Neumond",
+      "icon": "🌑"
+    },
+    {
+      "threshold": 5.53,
+      "name": "Zunehmende Sichel",
+      "icon": "🌒"
+    },
+    {
+      "threshold": 9.22,
+      "name": "Erstes Viertel",
+      "icon": "🌓"
+    },
+    {
+      "threshold": 12.91,
+      "name": "Zunehmender Mond",
+      "icon": "🌔"
+    },
+    {
+      "threshold": 16.61,
+      "name": "Vollmond",
+      "icon": "🌕"
+    },
+    {
+      "threshold": 20.3,
+      "name": "Abnehmender Mond",
+      "icon": "🌖"
+    },
+    {
+      "threshold": 23.99,
+      "name": "Letztes Viertel",
+      "icon": "🌗"
+    },
+    {
+      "threshold": 27.68,
+      "name": "Abnehmende Sichel",
+      "icon": "🌘"
+    },
+    {
+      "threshold": 29.54,
+      "name": "Neumond",
+      "icon": "🌑"
+    }
+  ],
+  "weather_codes": {
+    "0": "Klarer Himmel",
+    "1": "Überwiegend klar",
+    "2": "Teilweise bewölkt",
+    "3": "Bedeckt",
+    "45": "Nebel",
+    "48": "Reifnebel",
+    "51": "Leichter Nieselregen",
+    "53": "Mäßiger Nieselregen",
+    "55": "Dichter Nieselregen",
+    "56": "Gefrierender Niesel",
+    "57": "Starker gefrierender Niesel",
+    "61": "Leichter Regen",
+    "63": "Mäßiger Regen",
+    "65": "Starker Regen",
+    "66": "Gefrierender Regen",
+    "67": "Starker gefrierender Regen",
+    "71": "Leichter Schneefall",
+    "73": "Mäßiger Schneefall",
+    "75": "Starker Schneefall",
+    "77": "Schneegriesel",
+    "80": "Leichte Regenschauer",
+    "81": "Mäßige Regenschauer",
+    "82": "Heftige Regenschauer",
+    "85": "Schneeschauer",
+    "86": "Starke Schneeschauer",
+    "95": "Gewitter",
+    "96": "Gewitter mit Hagel",
+    "99": "Schweres Gewitter"
+  }
+}

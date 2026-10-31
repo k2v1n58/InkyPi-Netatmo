@@ -1,0 +1,87 @@
+{% extends "plugin.html" %}
+
+{% macro ico(name, cls="ico") -%}
+<img class="{{ cls }}" src="{{ icons_dir }}/{{ name }}.png" alt="">
+{%- endmacro %}
+
+{% block content %}
+{# Jost est une police variable : on la redéclare pour disposer des graisses fines #}
+{% for f in font_faces if f.font_family == "Jost" and f.font_weight == "normal" %}
+<style>@font-face { font-family: "Jost Var"; src: url("{{ f.url|replace('\\', '/') }}") format("truetype"); font-weight: 100 900; }</style>
+{% endfor %}
+
+<div class="mn">
+
+    <header class="mn-meta">
+        <span class="mn-station">{{ outdoor.name if outdoor else t.station_fallback }}</span>
+        <span class="mn-meta-right">
+            {% if stale %}<span class="mn-stale">{{ t.stale }}</span>{% endif %}
+            {% if moon %}<span class="mn-moon">{{ ico(moon.icon, "mn-moon-icon") }}{{ moon.illumination }}%</span>{% endif %}
+            {% if show_refresh_time %}<span>{{ last_refresh_time }}</span>{% endif %}
+        </span>
+    </header>
+
+    <section class="mn-now">
+        {% if outdoor %}
+        <div class="mn-temp">
+            <span class="mn-val">{{ outdoor.temp }}</span><span class="mn-deg">{{ units.temp }}</span>
+            {% if outdoor.trend %}<span class="mn-trend">{{ outdoor.trend }}</span>{% endif %}
+        </div>
+        {% endif %}
+        <dl class="mn-kv">
+            {% if outdoor %}
+            <div><dt>{{ t.min_max }}</dt><dd>{{ outdoor.min }}° <span class="mn-dim">/</span> {{ outdoor.max }}°</dd></div>
+            <div><dt>{{ t.humidity }}</dt><dd>{{ outdoor.humidity }}%</dd></div>
+            {% if outdoor.dew_point != "--" %}<div><dt>{{ t.dew_point }}</dt><dd>{{ outdoor.dew_point }}°</dd></div>{% endif %}
+            {% endif %}
+            {% if pressure and pressure.value != "--" %}<div><dt>{{ t.pressure }}</dt><dd>{{ pressure.value }} <small>{{ units.pressure }}</small> {{ pressure.trend }}</dd></div>{% endif %}
+            {% if wind %}
+            <div><dt>{{ t.wind }}</dt><dd>{{ wind.speed }} <small>{{ units.wind }}</small>{% if wind.dir %} {{ wind.dir }}{% endif %}</dd></div>
+            <div><dt>{{ t.gusts }}</dt><dd>{{ wind.gust }} <small>{{ units.wind }}</small></dd></div>
+            {% endif %}
+            {% if rain %}
+            <div><dt>{{ t.rain }} {{ t.rain_1h }}</dt><dd>{{ rain.rain_1h }} <small>{{ units.rain }}</small></dd></div>
+            <div><dt>{{ t.rain }} {{ t.rain_24h }}</dt><dd>{{ rain.rain_24h }} <small>{{ units.rain }}</small>{% if rain.forecast_6h %} <span class="mn-dim">· +6h {{ rain.forecast_6h }}</span>{% endif %}</dd></div>
+            {% endif %}
+        </dl>
+    </section>
+
+    {% if sparkline %}
+    <section class="mn-graph">
+        <div class="mn-label"><span>{{ t.past_24h }} / +24h</span><span>{{ sparkline.min }}° – {{ sparkline.max }}°</span></div>
+        <div class="graph-body">{{ sparkline.svg|safe }}{% for m in sparkline.markers %}<span class="gmark gmark-{{ m.kind }}{% if m.pos %} gpos-{{ m.pos }}{% endif %}" style="left: {{ m.x }}%; top: {{ m.y }}%;"><i></i><b>{{ m.label }}</b></span>{% endfor %}</div>
+        <div class="mn-axis"><span>-24h</span><span>{{ t.now }}</span><span>+24h</span></div>
+    </section>
+    {% endif %}
+
+    {% if forecast %}
+    <section class="mn-forecast">
+        {% for f in forecast %}
+        <div class="mn-day">
+            <span class="mn-day-label">{{ f.date_label }}</span>
+            {{ ico(f.icon, "mn-day-icon") }}
+            <span class="mn-day-temps"><span class="mn-dim">{{ f.temp_min }}°</span> {{ f.temp_max }}°</span>
+            {% if f.rain_prob is not none %}<span class="mn-day-rain">{{ f.rain_prob }}%</span>{% endif %}
+        </div>
+        {% endfor %}
+    </section>
+    {% endif %}
+
+    {% if indoor %}
+    <section class="mn-indoor cols-{{ [indoor|length, 4]|min }}">
+        {% for s in indoor %}
+        <div class="mn-room">
+            <span class="mn-room-name">{{ s.name }}</span>
+            <span class="mn-room-temp">{{ s.temp }}<small>{{ units.temp }}</small></span>
+            <span class="mn-room-sub">
+                <span class="mn-co2"><i class="dot co2-{{ s.co2_status }}"></i><small>CO₂</small> {{ s.co2 }}</span>
+                <span>{{ s.humidity }}%</span>
+                {% if s.noise %}<span>{{ s.noise }} <small>dB</small></span>{% endif %}
+            </span>
+        </div>
+        {% endfor %}
+    </section>
+    {% endif %}
+
+</div>
+{% endblock %}

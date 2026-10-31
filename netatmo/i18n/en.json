@@ -1,0 +1,140 @@
+{
+  "language_name": "English",
+  "labels": {
+    "station_fallback": "Netatmo Weather Station",
+    "updated_at": "Updated at {time}",
+    "today": "Today",
+    "humidity": "Humidity",
+    "co2": "CO2",
+    "pressure": "Pressure",
+    "noise": "Noise",
+    "dew_point": "Dew point",
+    "rain_1h": "1h",
+    "rain_24h": "24h",
+    "gusts": "Gusts",
+    "direction": "Direction",
+    "indoor": "Indoor",
+    "outdoor": "Outdoor",
+    "rain": "Rain",
+    "wind": "Wind",
+    "moon": "Moon",
+    "forecast": "Forecast",
+    "min_max": "Min / Max",
+    "wind_rain": "Wind & Rain",
+    "outdoor_forecast": "Sensors & Forecast",
+    "indoor_monitoring": "Indoor",
+    "past_24h": "Past 24h",
+    "current_rain": "Current",
+    "wind_current": "Wind",
+    "last_refresh": "Last refresh",
+    "now": "Now",
+    "graph_past": "Measured",
+    "graph_future": "Forecast",
+    "rain_forecast_6h": "Next 6h",
+    "stale": "Offline - cached data"
+  },
+  "days_abbr": [
+    "Mon",
+    "Tue",
+    "Wed",
+    "Thu",
+    "Fri",
+    "Sat",
+    "Sun"
+  ],
+  "cardinals": [
+    "N",
+    "NNE",
+    "NE",
+    "ENE",
+    "E",
+    "ESE",
+    "SE",
+    "SSE",
+    "S",
+    "SSW",
+    "SW",
+    "WSW",
+    "W",
+    "WNW",
+    "NW",
+    "NNW"
+  ],
+  "moon_phases": [
+    {
+      "threshold": 1.84,
+      "name": "New moon",
+      "icon": "🌑"
+    },
+    {
+      "threshold": 5.53,
+      "name": "Waxing crescent",
+      "icon": "🌒"
+    },
+    {
+      "threshold": 9.22,
+      "name": "First quarter",
+      "icon": "🌓"
+    },
+    {
+      "threshold": 12.91,
+      "name": "Waxing gibbous",
+      "icon": "🌔"
+    },
+    {
+      "threshold": 16.61,
+      "name": "Full moon",
+      "icon": "🌕"
+    },
+    {
+      "threshold": 20.3,
+      "name": "Waning gibbous",
+      "icon": "🌖"
+    },
+    {
+      "threshold": 23.99,
+      "name": "Last quarter",
+      "icon": "🌗"
+    },
+    {
+      "threshold": 27.68,
+      "name": "Waning crescent",
+      "icon": "🌘"
+    },
+    {
+      "threshold": 29.54,
+      "name": "New moon",
+      "icon": "🌑"
+    }
+  ],
+  "weather_codes": {
+    "0": "Clear sky",
+    "1": "Mainly clear",
+    "2": "Partly cloudy",
+    "3": "Overcast",
+    "45": "Fog",
+    "48": "Rime fog",
+    "51": "Light drizzle",
+    "53": "Moderate drizzle",
+    "55": "Dense drizzle",
+    "56": "Freezing drizzle",
+    "57": "Dense freezing drizzle",
+    "61": "Slight rain",
+    "63": "Moderate rain",
+    "65": "Heavy rain",
+    "66": "Freezing rain",
+    "67": "Heavy freezing rain",
+    "71": "Slight snow",
+    "73": "Moderate snow",
+    "75": "Heavy snow",
+    "77": "Snow grains",
+    "80": "Slight showers",
+    "81": "Moderate showers",
+    "82": "Violent showers",
+    "85": "Snow showers",
+    "86": "Heavy snow showers",
+    "95": "Thunderstorm",
+    "96": "Thunderstorm with hail",
+    "99": "Severe thunderstorm"
+  }
+}
