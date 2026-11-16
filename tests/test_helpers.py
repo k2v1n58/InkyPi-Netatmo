@@ -112,7 +112,7 @@ def test_parse_forecast():
 def test_hourly_starts_at_current_hour_not_midnight():
     pts, precip = h.upcoming_hourly(_open_meteo(), hours=24)
     assert len(pts) == 24 and len(precip) == 24
-    assert pts[0][1] == 5  # indice 5 de la série = heure courante
+    assert pts[0][1] == 5  # series index 5 = current hour
     now = datetime.now(timezone.utc).timestamp()
     assert abs(pts[0][0] - now) <= 3600
 
@@ -125,7 +125,7 @@ def test_sparkline():
     svg, markers, vmin, vmax = h.build_sparkline(past, fut, now, precip=rain)
     assert svg.startswith("<svg") and vmin == 10 and vmax == 14
     assert 'stroke-dasharray="5,4"' in svg
-    assert svg.count("<rect") == 1  # une seule barre de pluie
+    assert svg.count("<rect") == 1  # single rain bar
     kinds = {m["kind"] for m in markers}
     assert "now" in kinds and all(0 <= m["x"] <= 100 and 0 <= m["y"] <= 100 for m in markers)
     assert h.build_sparkline([], [], now) == ("", [], None, None)
@@ -177,7 +177,7 @@ def test_forecast_never_starts_before_now():
     past = [(now - 3600, 5.0), (now, 6.0)]
     future = [(now - 1800, 4.0), (now + 1800, 7.0), (now + 5400, 8.0)]
     svg, _, _, _ = h.build_sparkline(past, future, now)
-    # le point à now-30 min est ignoré : la courbe ne revient pas en arrière
+    # Point at now-30 min is ignored: curve does not go backwards
     assert svg and svg.count("stroke-dasharray=\"5,4\"") == 1
     xs = [float(p.split(",")[0]) for p in svg.split('stroke="#1c5fd4"')[0].rsplit("<path d=\"M ", 1)[1].split('"')[0].replace("L ", "").split()]
     assert xs == sorted(xs)
@@ -186,7 +186,7 @@ def test_forecast_never_starts_before_now():
 def test_dst_aware_hourly_timestamps():
     from datetime import datetime as dt
     zone = h._zone("Europe/Paris")
-    if zone is None:  # base tzdata absente sur cette machine
+    if zone is None:  # tzdata database missing on this host
         return
     before = h._local_to_utc_ts(dt(2026, 10, 25, 1, 0), zone, 7200)   # CEST (UTC+2)
     after = h._local_to_utc_ts(dt(2026, 10, 25, 4, 0), zone, 7200)    # CET (UTC+1)
@@ -210,3 +210,13 @@ def test_station_response_not_json_dict_is_a_netatmo_error():
         pass
     else:
         raise AssertionError("expected NetatmoError")
+
+
+def test_feels_like():
+    # Wind chill: 0 °C and 20 km/h -> ~ -5.2 °C (Environment Canada official table: -5)
+    assert round(h.feels_like(0, 80, 20)) == -5
+    # Heat index: 32 °C and 70% -> ~ 41 °C (NOAA table: 106 °F)
+    assert 40 <= h.feels_like(32, 70, 0) <= 42
+    # Mild conditions: measured temperature
+    assert h.feels_like(18, 60, 10) == 18
+    assert h.feels_like(None, 50, 10) is None

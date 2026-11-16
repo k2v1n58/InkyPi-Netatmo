@@ -1,13 +1,13 @@
-"""Fraction éclairée et phase de la Lune, d'après Jean Meeus.
+"""Illuminated fraction and phase of the Moon, based on Jean Meeus.
 
-Algorithme (« Astronomical Algorithms », 2e éd.) :
-  - position géocentrique de la Lune : chapitre 47, principaux termes des
-    tables 47.A (longitude, distance) et 47.B (latitude) ;
-  - position du Soleil : chapitre 25 (précision « basse », ~0,01°) ;
-  - angle de phase i et fraction éclairée k = (1 + cos i) / 2 : chapitre 48.
+Algorithm ("Astronomical Algorithms", 2nd ed.):
+  - geocentric position of the Moon: chapter 47, principal terms of
+    tables 47.A (longitude, distance) and 47.B (latitude);
+  - position of the Sun: chapter 25 (low-precision approximation, ~0.01°);
+  - phase angle i and illuminated fraction k = (1 + cos i) / 2: chapter 48.
 
-Les termes retenus donnent la longitude lunaire à environ 0,005° près, soit
-une fraction éclairée exacte à mieux que 0,1 %. Aucune dépendance externe.
+The terms used compute lunar longitude to ~0.005°, giving an illuminated
+fraction accurate to better than 0.1%. No external dependencies.
 """
 
 import math
@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 
 AU_KM = 149597870.7
 
-# (D, M, M', F, Σl en 1e-6 degré, Σr en 1e-3 km) — Meeus, table 47.A
+# (D, M, M', F, Σl in 1e-6 degrees, Σr in 1e-3 km) — Meeus, table 47.A
 _LON_DIST = (
     (0, 0, 1, 0, 6288774, -20905355), (2, 0, -1, 0, 1274027, -3699111),
     (2, 0, 0, 0, 658314, -2955968), (0, 0, 2, 0, 213618, -569925),
@@ -35,7 +35,7 @@ _LON_DIST = (
     (1, 0, 1, 0, -2348, 6322), (2, -2, 0, 0, 2236, -9884),
 )
 
-# (D, M, M', F, Σb en 1e-6 degré) — Meeus, table 47.B
+# (D, M, M', F, Σb in 1e-6 degrees) — Meeus, table 47.B
 _LAT = (
     (0, 0, 0, 1, 5128122), (0, 0, 1, 1, 280602), (0, 0, 1, -1, 277693),
     (2, 0, 0, -1, 173237), (2, 0, -1, 1, 55413), (2, 0, -1, -1, 46271),
@@ -53,7 +53,7 @@ def _julian_centuries(dt_utc):
 
 
 def _moon_position(t):
-    """Longitude, latitude (degrés) et distance (km) géocentriques de la Lune."""
+    """Geocentric longitude, latitude (degrees), and distance (km) of the Moon."""
     lp = 218.3164477 + 481267.88123421 * t
     d = 297.8501921 + 445267.1114034 * t
     m = 357.5291092 + 35999.0502909 * t
@@ -73,7 +73,7 @@ def _moon_position(t):
     for cd, cm, cmp_, cf, b_coef in _LAT:
         sb += b_coef * (e ** abs(cm)) * math.sin(rad(cd * d + cm * m + cmp_ * mp + cf * f))
 
-    # termes additifs (Vénus, Jupiter, aplatissement terrestre)
+    # Additive perturbation terms (Venus, Jupiter, Earth oblateness)
     a1 = rad(119.75 + 131.849 * t)
     a2 = rad(53.09 + 479264.290 * t)
     a3 = rad(313.45 + 481266.484 * t)
@@ -85,7 +85,7 @@ def _moon_position(t):
 
 
 def _sun_position(t):
-    """Longitude géométrique (degrés) et distance (km) du Soleil."""
+    """Geometric longitude (degrees) and distance (km) of the Sun."""
     l0 = 280.46646 + 36000.76983 * t + 0.0003032 * t * t
     m = 357.52911 + 35999.05029 * t - 0.0001537 * t * t
     e = 0.016708634 - 0.000042037 * t
@@ -98,10 +98,9 @@ def _sun_position(t):
 
 
 def moon_illumination(dt_utc):
-    """Retourne (fraction éclairée 0..1, élongation 0..360°, croissante: bool).
+    """Returns (illuminated fraction 0..1, elongation 0..360°, waxing: bool).
 
-    L'élongation vaut 0° à la nouvelle lune et 180° à la pleine lune ; elle sert
-    à choisir l'icône de phase.
+    Elongation is 0° at new moon and 180° at full moon; used to determine phase icon.
     """
     t = _julian_centuries(dt_utc)
     lam, beta, delta = _moon_position(t)
@@ -116,4 +115,3 @@ def moon_illumination(dt_utc):
     waxing = math.sin(dlon) > 0
     elongation = math.degrees(psi) if waxing else 360 - math.degrees(psi)
     return fraction, elongation, waxing
-

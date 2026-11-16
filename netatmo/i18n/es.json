@@ -31,7 +31,8 @@
     "graph_past": "Medido",
     "graph_future": "Previsión",
     "rain_forecast_6h": "Próx. 6h",
-    "stale": "Sin conexión - datos en caché"
+    "stale": "Sin conexión - datos en caché",
+    "feels_like": "Sensación"
   },
   "days_abbr": [
     "Lun",

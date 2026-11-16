@@ -7,7 +7,7 @@
 {% block content %}
 <div class="poster">
 
-    {# ---------- Panneau gauche : extérieur, en inversé ---------- #}
+    {# ---------- Left panel: outdoor hero section ---------- #}
     <aside class="panel">
         {% if outdoor %}
         <div class="panel-top">
@@ -18,8 +18,12 @@
             <span class="panel-val">{{ outdoor.temp }}</span><span class="panel-unit">{{ units.temp }}</span>
             {% if outdoor.trend %}<span class="panel-trend trend-{{ outdoor.trend_dir }}">{{ outdoor.trend }}</span>{% endif %}
         </div>
+        <div class="panel-feel">
+            {% if outdoor.feels_like != "--" %}<span>{{ t.feels_like }} <b>{{ outdoor.feels_like }}°</b></span>{% endif %}
+            {% if outdoor.condition %}<span class="panel-cond">{{ outdoor.condition }}</span>{% endif %}
+        </div>
         <dl class="panel-stats">
-            <div><dt>{{ t.min_max }}</dt><dd>{{ outdoor.min }}° / {{ outdoor.max }}°</dd></div>
+            <div><dt>{{ t.min_max }}</dt><dd><span class="temp-min">{{ outdoor.min }}°</span> / <span class="temp-max">{{ outdoor.max }}°</span></dd></div>
             <div><dt>{{ t.humidity }}</dt><dd>{{ outdoor.humidity }}%</dd></div>
             {% if outdoor.dew_point != "--" %}<div><dt>{{ t.dew_point }}</dt><dd>{{ outdoor.dew_point }}°</dd></div>{% endif %}
             {% if pressure and pressure.value != "--" %}
@@ -30,13 +34,13 @@
         <div class="panel-empty">{{ t.station_fallback }}</div>
         {% endif %}
         <div class="panel-foot">
-            {% if moon %}<span class="panel-moon" title="{{ moon.name }} {{ moon.illumination }}%">{{ ico(moon.icon, "ico-moon") }}</span>{% endif %}
+            {% if moon %}<span class="panel-moon" title="{{ moon.name }} {{ moon.illumination }}%">{{ ico(moon.icon, "ico-moon") }}<span>{{ moon.illumination }}%</span></span>{% endif %}
             {% if show_refresh_time %}<span class="panel-refresh">{{ last_refresh_time }}</span>{% endif %}
             {% if stale %}<span class="panel-stale">{{ t.stale }}</span>{% endif %}
         </div>
     </aside>
 
-    {# ---------- Colonne droite : à plat, séparée par des filets ---------- #}
+    {# ---------- Right column: structured flat sections ---------- #}
     <main class="main">
 
         {% if sparkline %}
@@ -54,7 +58,7 @@
         <section class="block block-wr">
             {% if wind %}
             <div class="wr">
-                <div class="block-head"><span>{{ wind.name }}</span>{% if wind.dir %}<span class="range">{{ wind.dir }}</span>{% endif %}</div>
+                <div class="block-head"><span>{{ wind.name }}</span>{% if wind.dir %}<span class="range wind-dir">{% if wind.angle is not none and wind.angle >= 0 %}<svg class="compass" viewBox="0 0 24 24" style="transform: rotate({{ ((wind.angle + 180) % 360)|round|int }}deg)"><circle cx="12" cy="12" r="10.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M12 3.5 L16.5 17 L12 14 L7.5 17 Z" fill="currentColor"/></svg>{% endif %}{{ wind.dir }}</span>{% endif %}</div>
                 <div class="wr-line">{{ ico("wind", "ico-sm") }}<b>{{ wind.speed }}</b><span class="unit">{{ units.wind }}</span></div>
                 <div class="sub">{{ t.gusts }} <b>{{ wind.gust }}</b></div>
             </div>
@@ -86,11 +90,11 @@
         <section class="block block-indoor">
             <div class="block-head"><span>{{ t.indoor_monitoring }}</span></div>
             <table class="rooms n{{ indoor|length }}">
-                <colgroup><col style="width: 37%"><col style="width: 23%"><col style="width: 22%"><col style="width: 18%"></colgroup>
+                <colgroup><col style="width: 30%"><col style="width: 36%"><col style="width: 20%"><col style="width: 14%"></colgroup>
                 {% for s in indoor %}
                 <tr>
                     <td class="r-name">{{ s.name }}{% if s.noise %} <small>({{ s.noise }} dB)</small>{% endif %}</td>
-                    <td class="r-temp"><b>{{ s.temp }}</b><span class="unit">{{ units.temp }}</span></td>
+                    <td class="r-temp"><b>{{ s.temp }}</b><span class="unit">{{ units.temp }}</span>{% if s.trend %}<span class="r-trend trend-{{ s.trend_dir }}">{{ s.trend }}</span>{% endif %}{% if s.min != "--" and s.max != "--" %}<span class="r-range">{{ s.min }}–{{ s.max }}°</span>{% endif %}</td>
                     <td><span class="pill co2-{{ s.co2_status }}">CO₂ {{ s.co2 }}</span></td>
                     <td class="r-hum">{{ ico("humidity", "ico-xs") }}{{ s.humidity }}%</td>
                 </tr>

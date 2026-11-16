@@ -31,7 +31,8 @@
     "graph_past": "Measured",
     "graph_future": "Forecast",
     "rain_forecast_6h": "Next 6h",
-    "stale": "Offline - cached data"
+    "stale": "Offline - cached data",
+    "feels_like": "Feels like"
   },
   "days_abbr": [
     "Mon",

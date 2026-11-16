@@ -1,6 +1,6 @@
 {% extends "plugin.html" %}
 
-{# Icône PNG du plugin (mêmes icônes que le plugin météo d'InkyPi) #}
+{# PNG icon macro (matches InkyPi's built-in weather plugin) #}
 {% macro ico(name, cls="ico") -%}
 <img class="{{ cls }}" src="{{ icons_dir }}/{{ name }}.png" alt="">
 {%- endmacro %}

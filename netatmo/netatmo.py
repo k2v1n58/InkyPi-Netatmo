@@ -1,4 +1,4 @@
-"""Plugin InkyPi : station météo Netatmo + prévisions Open-Meteo."""
+"""InkyPi plugin: Netatmo weather station + Open-Meteo forecast."""
 
 import logging
 import os
@@ -18,12 +18,21 @@ from utils.image_utils import take_screenshot_html
 from . import helpers as h
 from .i18n import LANGUAGES, load_translations
 from .icons import moon_icon_name
-from .netatmo_api import NetatmoClient, NetatmoError
+from .budget import CallBudget, DataCache
+from .netatmo_api import NetatmoBudgetError, NetatmoClient, NetatmoError
 
 logger = logging.getLogger(__name__)
 
-# Données Netatmo réutilisables si l'API est momentanément injoignable.
-STALE_MAX_AGE = 3 * 3600
+# --- Netatmo API calls: maximum 4 per hour (including token refresh).
+# Target schedule: station ~2.7/h (every 22 min), token ~1 every 3 h, rain 1 every 3 h,
+# temperature history catch-up 1 every 6 h. The hard cap is guaranteed by
+# CallBudget; these intervals simply prevent hitting it.
+MAX_CALLS_PER_HOUR = 4
+STATION_INTERVAL = 22 * 60        # ~2.7 calls/h; station only sends new readings every 10 min
+TEMP_HISTORY_INTERVAL = 6 * 3600  # in-between, history is supplemented by live station readings
+RAIN_HISTORY_INTERVAL = 3 * 3600
+STALE_BANNER_AGE = 45 * 60        # "offline" banner shown beyond this age
+STALE_MAX_AGE = 3 * 3600          # beyond this, no more cached data: raise error
 
 TREND = h.TREND_SYMBOLS
 
@@ -33,7 +42,7 @@ _MOON_ORDER = ["newmoon", "waxingcrescent", "firstquarter", "waxinggibbous",
 
 
 def _moon_name(age, moon_phases):
-    """Nom traduit cohérent avec l'icône (mêmes seuils, hémisphère nord)."""
+    """Translated name matching the icon (same thresholds, Northern hemisphere)."""
     try:
         return moon_phases[_MOON_ORDER.index(moon_icon_name(age))]["name"]
     except (ValueError, IndexError, KeyError, TypeError):
@@ -41,15 +50,18 @@ def _moon_name(age, moon_phases):
 
 
 class Netatmo(BasePlugin):
-    """Affiche les mesures d'une station Netatmo, la météo à 4 jours et la lune."""
+    """Displays Netatmo weather station readings, 4-day forecast, and moon phase."""
 
     def __init__(self, config, **dependencies):
         super().__init__(config, **dependencies)
+        plugin_dir = self.get_plugin_dir()
+        self._budget = CallBudget(os.path.join(plugin_dir, "call_budget.json"), max_calls=MAX_CALLS_PER_HOUR)
+        self._cache = DataCache(os.path.join(plugin_dir, "data_cache.json"))
         self._client = NetatmoClient(
-            os.path.join(self.get_plugin_dir(), "token_cache.json"),
+            os.path.join(plugin_dir, "token_cache.json"),
             env_path_finder=self._find_env_path,
+            budget=self._budget,
         )
-        self._last_station = None  # (timestamp, device)
 
     # ------------------------------------------------------------ InkyPi API
 
@@ -76,11 +88,11 @@ class Netatmo(BasePlugin):
         return None
 
     def render_image(self, dimensions, html_file, css_file=None, template_params=None):
-        """Comme BasePlugin.render_image, mais indépendant de l'encodage.
+        """Like BasePlugin.render_image, but independent of encoding.
 
-        Le gabarit de base d'InkyPi n'a pas de <meta charset> : selon le
-        navigateur et l'OS, les accents (é, °, ₂...) s'affichent mal. Tous les
-        caractères non-ASCII sont donc convertis en entités HTML.
+        InkyPi's base template lacks a <meta charset>: depending on browser and
+        OS, non-ASCII characters (é, °, ₂...) can render incorrectly. All
+        non-ASCII characters are therefore converted to HTML entities.
         """
         params = dict(template_params or {})
         css_files = [os.path.join(BASE_PLUGIN_RENDER_DIR, "plugin.css")]
@@ -99,19 +111,84 @@ class Netatmo(BasePlugin):
             raise RuntimeError("Failed to render the Netatmo display (screenshot failed, see logs).")
         return image
 
-    # ------------------------------------------------------------- données
+    # ------------------------------------------------------------- Data fetching
 
     def _fetch_station(self, device_config, station_name):
-        """Station Netatmo, ou la dernière connue (marquée périmée) si hors-ligne."""
+        """Station data: at most one request every 22 minutes.
+
+        Returns (device, is_stale). Between two requests, or if Netatmo is
+        unreachable / call budget reached, the last cached response is reused;
+        it is only marked 'offline' after 45 minutes.
+        """
+        key = f"station:{station_name.strip().lower()}"
+        age = self._cache.age(key)
+        if age is not None and age < STATION_INTERVAL:
+            return self._cache.get(key)["value"], False
         try:
             device = self._client.get_station(device_config, station_name)
-            self._last_station = (time.time(), device)
+            self._cache.put(key, device)
+            self._record_live_temperature(device)
             return device, False
         except NetatmoError as e:
-            if self._last_station and time.time() - self._last_station[0] < STALE_MAX_AGE:
-                logger.warning("Netatmo indisponible, données en cache utilisées : %s", e)
-                return self._last_station[1], True
+            if age is not None and age < STALE_MAX_AGE:
+                level = logging.INFO if isinstance(e, NetatmoBudgetError) else logging.WARNING
+                logger.log(level, "Netatmo: using cached data (%s)", e)
+                return self._cache.get(key)["value"], age > STALE_BANNER_AGE
             raise
+
+    def _next_station_due(self):
+        """Timestamp of the next planned station refresh."""
+        entries = [e for k, e in ((k, self._cache.get(k)) for k in self._cache.keys()) if k.startswith("station:") and e]
+        last = max((float(e["ts"]) for e in entries), default=time.time())
+        return max(last + STATION_INTERVAL, time.time())
+
+    def _record_live_temperature(self, device):
+        """Appends the outdoor temperature reading to the local 24h history."""
+        module = self._first_module(device.get("modules") or [], "NAModule1")
+        dash = (module or {}).get("dashboard_data") or {}
+        ts, temp = dash.get("time_utc"), h.to_float(dash.get("Temperature"))
+        if ts is None or temp is None:
+            return
+        entry = self._cache.get("live_temp")
+        points = [p for p in (entry["value"] if entry else []) if p[0] > time.time() - 86400 and p[0] != ts]
+        self._cache.put("live_temp", points + [[int(ts), temp]])
+
+    def _history(self, key, interval, fetch):
+        """Cached history, refreshed at most every `interval` seconds.
+
+        The station has priority: history is only requested if, after this
+        call, at least one slot remains available at the station's next
+        scheduled refresh time. Otherwise it waits; hard cap is guaranteed by CallBudget.
+        """
+        age = self._cache.age(key)
+        if (age is None or age >= interval) and self._budget.remaining() >= 1 \
+                and self._budget.remaining_at(self._next_station_due(), extra=1) >= 1:
+            points = fetch()
+            if points is not None:
+                self._cache.put(key, points)
+        entry = self._cache.get(key)
+        return [tuple(p) for p in entry["value"]] if entry else []
+
+    def _temperature_history(self, device_config, device, module):
+        """24h history: Netatmo records (refreshed every 6h) + live local readings."""
+        fetched = self._history(
+            f"temp_hist:{module.get('_id')}", TEMP_HISTORY_INTERVAL,
+            lambda: self._client.get_temperature_history(device_config, device.get("_id"), module.get("_id")))
+        live = self._cache.get("live_temp")
+        merged = {int(ts): v for ts, v in fetched}
+        for ts, v in (live["value"] if live else []):
+            # A local reading does not replace an hourly Netatmo average
+            if all(abs(ts - other) > 1800 for other in merged):
+                merged[int(ts)] = v
+        cutoff = time.time() - 86400
+        return sorted((ts, v) for ts, v in merged.items() if ts >= cutoff)
+
+    def _rain_history(self, device_config, device, module):
+        cutoff = time.time() - 86400
+        points = self._history(
+            f"rain_hist:{module.get('_id')}", RAIN_HISTORY_INTERVAL,
+            lambda: self._client.get_rain_history(device_config, device.get("_id"), module.get("_id")))
+        return [(ts, mm) for ts, mm in points if ts >= cutoff]
 
     @staticmethod
     def _first_module(modules, module_type):
@@ -121,7 +198,7 @@ class Netatmo(BasePlugin):
     def _name(settings, key, module, fallback):
         return h.setting_str(settings, key) or (module or {}).get("module_name") or fallback
 
-    # --------------------------------------------------------------- rendu
+    # --------------------------------------------------------------- Rendering
 
     def generate_image(self, settings, device_config):
         dimensions = device_config.get_resolution()
@@ -137,7 +214,7 @@ class Netatmo(BasePlugin):
         show_outdoor, show_wind, show_rain = flag("show_outdoor"), flag("show_wind"), flag("show_rain")
         show_moon, show_forecast, show_graph = flag("show_moon"), flag("show_forecast"), flag("show_graph")
 
-        # Position : saisie manuelle prioritaire, sinon celle de la station Netatmo.
+        # Coordinates: manual input takes precedence, otherwise use Netatmo station coordinates.
         manual_coords = h.parse_coordinates(settings.get("latitude"), settings.get("longitude"))
         if (h.setting_str(settings, "latitude") or h.setting_str(settings, "longitude")) and not manual_coords:
             raise RuntimeError("Latitude and longitude must be valid numbers (lat -90..90, lon -180..180).")
@@ -170,7 +247,7 @@ class Netatmo(BasePlugin):
                 "trend_dir": main_dash.get("pressure_trend") or "stable",
             }
 
-        # ---- Prévisions Open-Meteo (une seule requête pour carte, graphe et pluie)
+        # ---- Open-Meteo forecast (single request for cards, graph, and rain)
         forecast, current_icon = [], None
         future_pts, future_precip = [], []
         if coords and (show_forecast or show_graph or show_outdoor or show_rain):
@@ -180,8 +257,9 @@ class Netatmo(BasePlugin):
                     om, tr.get("days_abbr", []), tr.get("weather_codes", {}), t.get("today", "Today"))
                 future_pts, future_precip = h.upcoming_hourly(om)
 
-        # ---- Extérieur
+        # ---- Outdoor
         outdoor, outdoor_module = None, self._first_module(modules, "NAModule1")
+        wind_dash = (self._first_module(modules, "NAModule2") or {}).get("dashboard_data") or {}
         if show_outdoor and outdoor_module:
             dash = outdoor_module.get("dashboard_data") or {}
             temp, hum = dash.get("Temperature"), dash.get("Humidity")
@@ -196,9 +274,11 @@ class Netatmo(BasePlugin):
                 "humidity": h.fmt_int(hum),
                 "dew_point": h.fmt_float(h.conv_temp(dew, units)),
                 "icon": current_icon or (forecast[0]["icon"] if forecast else None),
+                "feels_like": h.fmt_float(h.conv_temp(h.feels_like(temp, hum, wind_dash.get("WindStrength")), units)),
+                "condition": forecast[0]["weather"] if forecast else "",
             }
 
-        # ---- Vent
+        # ---- Wind
         wind = None
         wind_module = self._first_module(modules, "NAModule2")
         if show_wind and wind_module:
@@ -212,7 +292,7 @@ class Netatmo(BasePlugin):
                 "angle": h.to_float(angle),
             }
 
-        # ---- Pluie
+        # ---- Rain
         rain = None
         rain_module = self._first_module(modules, "NAModule3")
         if show_rain and rain_module:
@@ -230,7 +310,7 @@ class Netatmo(BasePlugin):
             if future_precip:
                 rain["forecast_6h"] = h.fmt_rain(sum(mm for ts, mm in future_precip if now_ts_rain - 1800 <= ts < now_ts_rain + 6 * 3600), units)
 
-        # ---- Intérieur
+        # ---- Indoor
         indoor = []
         if flag("show_main_indoor"):
             indoor.append(self._indoor_card(
@@ -243,7 +323,7 @@ class Netatmo(BasePlugin):
                     self._name(settings, f"name_indoor_{i + 1}", extra[i], f"{t.get('indoor', 'Indoor')} {i + 1}"),
                     extra[i].get("dashboard_data") or {}, units))
 
-        # ---- Lune
+        # ---- Moon
         moon = None
         if show_moon:
             phase = h.get_moon_phase(now, tr.get("moon_phases", []))
@@ -254,21 +334,25 @@ class Netatmo(BasePlugin):
                 "icon": moon_icon_name(phase["age"], lat),
             }
 
-        # ---- Graphique -24h / +24h
+        # ---- Graph -24h / +24h
         sparkline = None
         if show_graph:
             now_ts = int(time.time())
             past = []
             if outdoor_module:
-                raw = self._client.get_temperature_history(
-                    device_config, device.get("_id"), outdoor_module.get("_id"))
+                raw = self._temperature_history(device_config, device, outdoor_module)
                 past = h.merge_current_reading(
                     [(ts, h.conv_temp(v, units)) for ts, v in raw],
                     now_ts,
                     h.conv_temp((outdoor_module.get("dashboard_data") or {}).get("Temperature"), units),
                 )
-            # Open-Meteo est déjà dans l'unité demandée : pas de reconversion.
-            svg, markers, vmin, vmax = h.build_sparkline(past, future_pts, now_ts, precip=future_precip)
+            # Measured rain from rain gauge (past) + forecast rain (future), in mm
+            measured_rain = []
+            if rain_module and show_rain:
+                measured_rain = self._rain_history(device_config, device, rain_module)
+            # Open-Meteo is already in the requested units: no conversion needed.
+            svg, markers, vmin, vmax = h.build_sparkline(
+                past, future_pts, now_ts, precip=measured_rain + list(future_precip))
             if svg:
                 sparkline = {
                     "svg": svg,
@@ -301,8 +385,6 @@ class Netatmo(BasePlugin):
         theme = h.setting_str(settings, "theme")
         if theme == "poster":
             return self.render_image(dimensions, "template_poster.html", "poster.css", template_params)
-        if theme == "minimal":
-            return self.render_image(dimensions, "template_minimal.html", "minimal.css", template_params)
         return self.render_image(dimensions, "template.html", "template.css", template_params)
 
     @staticmethod
@@ -315,4 +397,8 @@ class Netatmo(BasePlugin):
             "co2": h.fmt_int(co2),
             "co2_status": h.co2_status(co2),
             "noise": h.fmt_int(dash.get("Noise")) if with_noise and dash.get("Noise") is not None else None,
+            "trend": TREND.get(dash.get("temp_trend"), ""),
+            "trend_dir": dash.get("temp_trend") or "stable",
+            "min": h.fmt_float(h.conv_temp(dash.get("min_temp"), units)),
+            "max": h.fmt_float(h.conv_temp(dash.get("max_temp"), units)),
         }

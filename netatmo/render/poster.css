@@ -1,15 +1,16 @@
 @charset "utf-8";
 /* =========================================================================
-   Netatmo - thème "Poster" : panneau extérieur inversé + colonne à plat.
-   1rem = 10px sur 800x480 ; tout suit la résolution.
+   Netatmo - "Poster" theme optimized for E-Ink (Spectra 6 & monochrome).
+   Light, high-contrast, editorial layout with bold typography.
+   1rem = 10px on 800x480; scalable to all resolutions.
    ========================================================================= */
 
 :root {
     --u: min(100vw / 800, 100vh / 480);
     --ink: #000;
-    --ink-2: #333;
+    --ink-2: #2a2a2a;
     --ink-3: #6b6b6b;
-    --rule: #bdbdbd;
+    --rule: #cfcfcf;
     --warm: #d9480f;
     --cool: #1c5fd4;
     --good: #1f7a3d;
@@ -34,33 +35,41 @@ b { font-weight: 900; }
 
 .poster { width: 100%; height: 100%; display: flex; }
 
-/* ---------- Panneau inversé ---------- */
+/* ---------- Left Panel: Outdoor Hero Section ---------- */
 .panel {
     flex: 0 0 38%;
-    background: #111;
-    color: #fff;
-    padding: 1rem 1.2rem;
+    background: #fff;
+    color: var(--ink);
+    border-right: 0.18rem solid var(--rule);
+    padding: 1.1rem 1.4rem;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     min-width: 0;
 }
 .panel-top { display: flex; justify-content: space-between; align-items: center; }
-.panel-name { font-size: 1.4rem; font-weight: 800; letter-spacing: 0.12rem; text-transform: uppercase; color: #ffb48a; }
+.panel-name { font-size: 1.35rem; font-weight: 900; letter-spacing: 0.12rem; text-transform: uppercase; color: var(--warm); }
 .panel-icon { width: 6.2rem; height: 6.2rem; object-fit: contain; }
-.panel-temp { display: flex; align-items: baseline; white-space: nowrap; line-height: 0.9; }
-.panel-val { font-size: 11rem; font-weight: 900; letter-spacing: -0.4rem; }
-.panel-unit { font-size: 3.4rem; font-weight: 700; margin-left: 0.3rem; color: #ddd; }
+.panel-temp { display: flex; align-items: baseline; white-space: nowrap; line-height: 0.88; }
+.panel-val { font-size: 11rem; font-weight: 900; letter-spacing: -0.4rem; color: var(--ink); }
+.panel-unit { font-size: 3.4rem; font-weight: 700; margin-left: 0.3rem; color: var(--ink-3); }
 .panel-trend { font-size: 3.6rem; font-weight: 900; margin-left: 0.6rem; }
-.panel .trend-up { color: #ff7b72; }
-.panel .trend-down { color: #7fb0ff; }
-.panel .trend-stable { color: #aaa; }
+.trend-up { color: var(--bad); }
+.trend-down { color: var(--cool); }
+.trend-stable { color: var(--ink-3); }
 
-.panel-stats { margin: 0; border-top: 0.15rem solid #444; padding-top: 0.5rem; }
-.panel-stats > div { display: flex; justify-content: space-between; font-size: 1.5rem; line-height: 1.55; }
-.panel-stats dt { color: #b5b5b5; font-weight: 600; }
-.panel-stats dd { margin: 0; font-weight: 800; }
-.panel-empty { font-size: 2.2rem; font-weight: 800; color: #aaa; margin: auto 0; }
+.panel-feel { display: flex; flex-direction: column; gap: 0.15rem; font-size: 1.45rem; color: var(--ink-2); margin-top: -0.3rem; }
+.panel-feel b { color: var(--ink); font-weight: 800; }
+.panel-cond { font-size: 1.55rem; font-weight: 800; color: var(--ink-2); }
+
+.panel-stats { margin: 0; border-top: 0.14rem solid var(--rule); padding-top: 0.6rem; }
+.panel-stats > div { display: flex; justify-content: space-between; font-size: 1.45rem; line-height: 1.6; }
+.panel-stats dt { color: var(--ink-3); font-weight: 600; }
+.panel-stats dd { margin: 0; font-weight: 800; color: var(--ink); }
+.temp-min { color: var(--cool); }
+.temp-max { color: var(--bad); }
+
+.panel-empty { font-size: 2.2rem; font-weight: 800; color: var(--ink-3); margin: auto 0; }
 
 .panel-foot {
     display: flex;
@@ -68,26 +77,28 @@ b { font-weight: 900; }
     justify-content: space-between;
     align-items: center;
     gap: 0.3rem 1rem;
-    margin-top: 0.7rem;
+    margin-top: 0.8rem;
+    padding-top: 0.5rem;
+    border-top: 0.1rem solid var(--rule);
     font-size: 1.25rem;
     font-weight: 700;
-    color: #d6d6d6;
+    color: var(--ink-3);
 }
-.panel-moon { display: inline-flex; align-items: center; gap: 0.5rem; }
-.ico-moon { width: 5rem; height: 5rem; display: block; }
-.panel-stale { background: var(--bad); color: #fff; padding: 0 0.6rem; border-radius: 0.3rem; }
+.panel-moon { display: inline-flex; align-items: center; gap: 0.4rem; color: var(--ink-2); font-weight: 800; }
+.ico-moon { width: 3.4rem; height: 3.4rem; display: block; }
+.panel-stale { background: var(--bad); color: #fff; padding: 0.1rem 0.6rem; border-radius: 0.3rem; font-weight: 800; }
 
-/* ---------- Colonne principale ---------- */
+/* ---------- Main Column: Structured Flat Sections ---------- */
 .main {
     flex: 1;
     min-width: 0;
-    padding: 0.9rem 1.2rem 0.9rem 1.4rem;
+    padding: 0.9rem 1.4rem;
     display: flex;
     flex-direction: column;
     gap: 0.7rem;
 }
 .block { min-height: 0; }
-.block + .block { border-top: 0.12rem solid var(--rule); padding-top: 0.6rem; }
+.block + .block { border-top: 0.14rem solid var(--rule); padding-top: 0.6rem; }
 
 .block-head {
     display: flex;
@@ -101,18 +112,17 @@ b { font-weight: 900; }
     white-space: nowrap;
 }
 .range { font-size: 1.15rem; font-weight: 800; color: var(--warm); letter-spacing: 0; }
-
 .unit { font-weight: 600; color: var(--ink-3); margin-left: 0.3rem; }
 
-/* graphique */
+/* Graph */
 .block-graph { flex: 1 1 0; min-height: 6rem; display: flex; flex-direction: column; }
 .block-graph .block-head { color: var(--warm); }
-.graph-body { flex: 1; min-height: 3rem; display: flex; margin: 0.3rem 0 0.1rem; }
+.graph-body { flex: 1; min-height: 3rem; display: flex; margin: 0.3rem 0 0.1rem; position: relative; }
 .sparkline-svg { width: 100%; height: 100%; display: block; }
 .graph-foot { display: flex; justify-content: space-between; font-size: 1.05rem; font-weight: 700; color: var(--ink-3); }
 .graph-foot b { color: var(--ink); }
 
-/* vent / pluie */
+/* Wind / Rain */
 .block-wr { flex: none; display: flex; gap: 1.6rem; }
 .wr { flex: 1; min-width: 0; }
 .block-wr .block-head { color: var(--cool); }
@@ -121,8 +131,10 @@ b { font-weight: 900; }
 .wr-line .unit { margin-left: 0; font-size: 1.2rem; }
 .ico-sm { width: 2.4rem; height: 2.4rem; }
 .sub { font-size: 1.15rem; font-weight: 600; color: var(--ink-2); margin-top: 0.2rem; }
+.wind-dir { display: inline-flex; align-items: center; gap: 0.35rem; }
+.compass { width: 1.7rem; height: 1.7rem; color: var(--cool); }
 
-/* prévisions */
+/* Forecast */
 .block-forecast { flex: 0 0 auto; display: flex; }
 .fday {
     flex: 1;
@@ -132,9 +144,20 @@ b { font-weight: 900; }
     justify-content: space-between;
     padding: 0 0.3rem;
     text-align: center;
+    position: relative;
 }
 .fday + .fday { border-left: 0.1rem solid var(--rule); }
-.fday-today { background: #fff3e8; }
+.fday-today .fday-label { color: var(--warm); font-weight: 900; }
+.fday-today::after {
+    content: "";
+    position: absolute;
+    bottom: -0.2rem;
+    left: 20%;
+    right: 20%;
+    height: 0.22rem;
+    background: var(--warm);
+    border-radius: 0.15rem;
+}
 .fday-label { font-size: 1.15rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.06rem; white-space: nowrap; }
 .fday-icon { width: 3.6rem; height: 3.6rem; object-fit: contain; }
 .fday-temps { font-size: 1.7rem; line-height: 1; }
@@ -142,59 +165,59 @@ b { font-weight: 900; }
 .fday-temps i { font-style: normal; font-weight: 700; color: var(--cool); margin-left: 0.3rem; }
 .fday-rain { font-size: 1.05rem; font-weight: 800; color: var(--cool); }
 
-/* intérieur */
+/* Indoor */
 .block-indoor { flex: 0 0 auto; display: flex; flex-direction: column; }
 .block-indoor .block-head { color: var(--good); }
 .rooms { width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 0.2rem; }
-.rooms td { height: 4rem; }
-.rooms td { padding: 0 0.4rem; vertical-align: middle; font-size: 1.35rem; font-weight: 700; white-space: nowrap; }
+.rooms td { height: 4rem; padding: 0 0.4rem; vertical-align: middle; font-size: 1.35rem; font-weight: 700; white-space: nowrap; }
 .rooms tr + tr td { border-top: 0.08rem solid #dcdcdc; }
 .r-name { font-weight: 800; text-transform: uppercase; letter-spacing: 0.05rem; padding-left: 0 !important; overflow: hidden; text-overflow: ellipsis; }
-.r-temp { text-align: right; }
+.r-name small { font-size: 1.05rem; font-weight: 700; color: var(--ink-3); text-transform: none; letter-spacing: 0; }
+.r-temp { text-align: right; white-space: nowrap; }
 .r-temp b { font-size: 2.6rem; }
+.r-trend { font-size: 1.5rem; font-weight: 900; margin-left: 0.3rem; }
+.r-range { font-size: 1.05rem; font-weight: 600; color: var(--ink-3); margin-left: 0.5rem; }
 .r-hum { color: var(--cool); }
 .r-hum img { vertical-align: middle; margin-right: 0.2rem; }
-.r-name small { font-size: 1.05rem; font-weight: 700; color: var(--ink-3); text-transform: none; letter-spacing: 0; }
 .ico-xs { width: 1.3rem; height: 1.3rem; }
-.pill { display: inline-block; padding: 0 0.6rem; border-radius: 0.3rem; font-size: 1.2rem; font-weight: 800; border: 0.12rem solid currentColor; }
-.co2-good { color: var(--good); }
-.co2-fair { color: var(--warm); }
+
+/* CO2 Pills */
+.pill { display: inline-block; padding: 0.05rem 0.6rem; border-radius: 0.3rem; font-size: 1.2rem; font-weight: 800; border: 0.12rem solid currentColor; }
+.co2-good { color: var(--good); background: #fff; }
+.co2-fair { color: var(--warm); background: #fff; }
 .co2-poor { background: var(--bad); color: #fff; border-color: var(--bad); }
 .co2-unknown { color: var(--ink-3); }
 
-/* ---------- Portrait : panneau en haut ---------- */
-@media (orientation: portrait) {
-    .poster { flex-direction: column; }
-    .panel { flex: 0 0 auto; padding: 0.9rem 1.1rem; }
-    .panel-val { font-size: 10rem; }
-    .panel-icon { width: 5.6rem; height: 5.6rem; }
-    .panel-stats { display: grid; grid-template-columns: 1fr 1fr; column-gap: 1.6rem; }
-    .main { padding: 0.8rem 1.1rem; }
-    .block-wr { gap: 1.2rem; }
-}
-.block-wr .range { color: var(--cool); }
-
-/* 4 pièces ou plus : lignes compactes pour que tout reste visible */
+/* 4 or more rooms: compact sizing */
 .rooms.n4 td, .rooms.n5 td, .rooms.n6 td { height: 3.1rem; font-size: 1.25rem; }
 .rooms.n4 .r-temp b, .rooms.n5 .r-temp b, .rooms.n6 .r-temp b { font-size: 2.2rem; }
 .rooms.n5 td, .rooms.n6 td { height: 2.6rem; }
 .rooms.n5 .r-temp b, .rooms.n6 .r-temp b { font-size: 1.9rem; }
 
-/* repères du graphique (posés en HTML pour ne pas être déformés) */
-.graph-body { position: relative; }
+/* Graph markers */
 .gmark { position: absolute; transform: translate(-50%, -50%); line-height: 1; white-space: nowrap; }
 .gmark i { display: block; width: 0.9rem; height: 0.9rem; border-radius: 50%; background: #fff; border: 0.22rem solid var(--warm); }
 .gmark b { position: absolute; left: 50%; font-size: 1.15rem; font-weight: 900; color: var(--ink); }
 .gmark-now i { width: 1.3rem; height: 1.3rem; background: var(--warm); border-color: #fff; box-shadow: 0 0 0 0.15rem var(--warm); }
 .gmark-now b { transform: translate(-115%, -135%); color: var(--warm); font-size: 1.35rem; }
 .gmark-max i, .gmark-min i { width: 0.7rem; height: 0.7rem; border-width: 0.18rem; border-color: var(--ink-2); }
-.gmark-max b { transform: translate(-50%, -190%); }
+.gmark-max b { transform: translate(-50%, -190%); color: var(--bad); }
 .gmark-min b { transform: translate(-50%, -190%); color: var(--cool); }
 .graph-foot span:nth-child(2), .graph-foot span:nth-child(4) { opacity: 0.7; }
 .rain-note { color: var(--cool); }
 
-/* étiquette « Now » : côté opposé à la courbe */
 .gmark-now.gpos-upleft b { transform: translate(-118%, -150%); }
 .gmark-now.gpos-downleft b { transform: translate(-118%, 50%); }
 .gmark-now.gpos-up b { transform: translate(-50%, -190%); }
 .gmark-now.gpos-upright b { transform: translate(10%, -110%); }
+
+/* ---------- Portrait: Panel at Top ---------- */
+@media (orientation: portrait) {
+    .poster { flex-direction: column; }
+    .panel { flex: 0 0 auto; border-right: none; border-bottom: 0.18rem solid var(--rule); padding: 1rem 1.2rem; }
+    .panel-val { font-size: 10rem; }
+    .panel-icon { width: 5.6rem; height: 5.6rem; }
+    .panel-stats { display: grid; grid-template-columns: 1fr 1fr; column-gap: 1.6rem; }
+    .main { padding: 0.8rem 1.2rem; }
+    .block-wr { gap: 1.2rem; }
+}

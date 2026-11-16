@@ -2,9 +2,7 @@
 
 *Netatmo* is a plugin for [InkyPi](https://github.com/fatihak/InkyPi) that displays the live readings of your [Netatmo](https://www.netatmo.com/) weather station with a −24h / +24h temperature graph, a 4-day forecast and the moon phase.
 
-*Français : voir [README.fr.md](README.fr.md).*
-
-Three themes, selectable in the settings:
+Two themes, selectable in the settings:
 
 **Classic**
 
@@ -13,10 +11,6 @@ Three themes, selectable in the settings:
 **Poster**
 
 ![Poster theme](docs/screenshot-poster.png)
-
-**Minimal**
-
-![Minimal theme](docs/screenshot-minimal.png)
 
 <img src="docs/screenshot-portrait.png" alt="Poster theme, portrait" width="240">
 
@@ -48,7 +42,7 @@ Or manually: copy the [`netatmo`](netatmo) folder into `InkyPi/src/plugins/` and
 
 | API | Used for | Key | Cost / limits |
 |---|---|---|---|
-| [Netatmo Connect – Weather](https://dev.netatmo.com/apidocumentation/weather) | Your station's readings, history and location | Yes (OAuth2, see below) | Free for personal use. Rate limit: 50 requests / 10 s, 500 / hour per user. A refresh uses 2–3 requests. |
+| [Netatmo Connect – Weather](https://dev.netatmo.com/apidocumentation/weather) | Your station's readings, history and location | Yes (OAuth2, see below) | Free for personal use. **The plugin never makes more than 4 Netatmo calls per hour** (token renewal included), ahead of the lower polling limits Netatmo announced for March 2027. |
 | [Open-Meteo](https://open-meteo.com/en/docs) | 4-day and hourly forecast | No | Free for non-commercial use, 10 000 calls/day. |
 
 ### Getting your Netatmo credentials
@@ -64,11 +58,22 @@ Or manually: copy the [`netatmo`](netatmo) folder into `InkyPi/src/plugins/` and
 
 > **Token handling.** Netatmo issues a new refresh token on each renewal and invalidates the old one. The plugin keeps the current token in `token_cache.json` (inside the plugin folder) **and** writes it back to your `.env`. If you ever generate a new token yourself, just paste it in **API Keys**: it takes precedence over the cache.
 
+### API usage
+
+Netatmo stations upload new readings about every 10 minutes, and Netatmo is lowering polling rate limits from March 1st, 2027. The plugin therefore caps itself at **4 calls per rolling hour**, whatever your refresh interval or how often you press *Update now*:
+
+- station data at most every 22 minutes (between two calls the last answer is reused, so readings can be up to ~22 minutes old);
+- temperature history re-synced every 6 hours, and filled in between with the readings the plugin already receives;
+- measured rain history every 3 hours; token renewal every 3 hours;
+- on HTTP 429 or when the cap is reached, the last data is shown (an "offline" badge appears only if it is older than 45 minutes).
+
+Netatmo's [webhooks](https://dev.netatmo.com/apidocumentation/webhooks) are not used: they require a publicly reachable HTTPS endpoint, which a home Raspberry Pi normally does not have.
+
 ## Settings
 
 | Setting | Description |
 |---|---|
-| Language / Theme / Units | Display language; **Classic** (cards), **Poster** (big inverted outdoor panel) or **Minimal** (typography only); automatic, metric or imperial units. |
+| Language / Theme / Units | Display language; **Classic** (cards) or **Poster** (big outdoor panel); automatic, metric or imperial units. |
 | Latitude / Longitude | Optional. Empty = location of your Netatmo station. Fill both to override. Used for forecast and moon orientation. |
 | Display | Refresh time, 4-day forecast, temperature graph, moon phase. |
 | Netatmo modules | Show/hide outdoor, wind, rain, main indoor and 3 extra indoor modules. |

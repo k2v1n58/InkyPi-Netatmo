@@ -31,7 +31,8 @@
     "graph_past": "Mesuré",
     "graph_future": "Prévision",
     "rain_forecast_6h": "6h à venir",
-    "stale": "Hors ligne - données en cache"
+    "stale": "Hors ligne - données en cache",
+    "feels_like": "Ressenti"
   },
   "days_abbr": [
     "Lun",

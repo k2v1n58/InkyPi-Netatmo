@@ -31,7 +31,8 @@
     "graph_past": "Misurato",
     "graph_future": "Previsione",
     "rain_forecast_6h": "Prossime 6h",
-    "stale": "Offline - dati in cache"
+    "stale": "Offline - dati in cache",
+    "feels_like": "Percepita"
   },
   "days_abbr": [
     "Lun",

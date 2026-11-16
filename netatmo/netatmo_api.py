@@ -1,4 +1,4 @@
-"""Client minimal de l'API Netatmo Connect (station météo) avec gestion OAuth2."""
+"""Minimal Netatmo Connect API client (weather station) with OAuth2 handling."""
 
 import json
 import logging
@@ -21,13 +21,17 @@ ENV_CLIENT_ID = "NETATMO_CLIENT_ID"
 ENV_CLIENT_SECRET = "NETATMO_CLIENT_SECRET"
 ENV_REFRESH_TOKEN = "NETATMO_REFRESH_TOKEN"
 
-# Un seul renouvellement de jeton à la fois : Netatmo invalide l'ancien
-# refresh_token dès qu'un nouveau est émis.
+# Only one token refresh at a time: Netatmo invalidates the old refresh_token
+# as soon as a new one is issued.
 _TOKEN_LOCK = threading.Lock()
 
 
 class NetatmoError(RuntimeError):
-    """Erreur lisible affichée dans l'interface web d'InkyPi."""
+    """Readable error displayed in InkyPi's web interface."""
+
+
+class NetatmoBudgetError(NetatmoError):
+    """Call budget reached (plugin-enforced cap or Netatmo HTTP 429)."""
 
 
 def _build_session():
@@ -39,7 +43,7 @@ def _build_session():
 
 
 def _api_error_text(res):
-    """Message d'erreur API sans jamais recopier la réponse brute (jetons)."""
+    """API error message without leaking raw response content (tokens)."""
     try:
         body = res.json()
         err = body.get("error")
@@ -51,13 +55,14 @@ def _api_error_text(res):
 
 
 class NetatmoClient:
-    def __init__(self, cache_path, env_path_finder=None):
+    def __init__(self, cache_path, env_path_finder=None, budget=None):
         self._cache_path = cache_path
+        self.budget = budget  # CallBudget, or None to disable rate limiting (tests)
         self._find_env_path = env_path_finder
         self._session = _build_session()
         self._token = {}
 
-    # ------------------------------------------------------------------ cache
+    # ------------------------------------------------------------------ Cache
 
     def _load_cache(self):
         try:
@@ -67,7 +72,7 @@ class NetatmoClient:
         except FileNotFoundError:
             return {}
         except (OSError, ValueError) as e:
-            logger.warning("Cache de jeton Netatmo illisible (%s), ignoré.", e)
+            logger.warning("Netatmo token cache unreadable (%s), ignored.", e)
             return {}
 
     def _save_cache(self):
@@ -78,14 +83,14 @@ class NetatmoClient:
                 json.dump(self._token, f)
             os.replace(tmp, self._cache_path)
         except OSError as e:
-            logger.warning("Impossible d'écrire le cache de jeton Netatmo : %s", e)
+            logger.warning("Unable to write Netatmo token cache: %s", e)
             try:
                 os.remove(tmp)
             except OSError:
                 pass
 
     def _update_env_refresh_token(self, new_token, device_config):
-        """Reporte le nouveau refresh_token dans .env. Retourne True si réussi."""
+        """Writes the new refresh_token back to .env. Returns True on success."""
         if not self._find_env_path:
             return False
         try:
@@ -110,7 +115,7 @@ class NetatmoClient:
             os.replace(tmp, env_path)
             return True
         except OSError as e:
-            logger.warning("Mise à jour de %s dans .env impossible : %s", ENV_REFRESH_TOKEN, e)
+            logger.warning("Failed to update %s in .env: %s", ENV_REFRESH_TOKEN, e)
             return False
 
     # ------------------------------------------------------------------ OAuth
@@ -129,7 +134,19 @@ class NetatmoClient:
             )
         return client_id, secret, refresh
 
+    def _spend(self):
+        """Consumes one call from the budget or raises NetatmoBudgetError."""
+        if self.budget is not None and not self.budget.try_acquire():
+            wait = self.budget.seconds_until_free()
+            raise NetatmoBudgetError(f"Netatmo call budget reached, next call possible in {wait // 60 + 1} min.")
+
+    def _rate_limited(self):
+        if self.budget is not None:
+            self.budget.exhaust()
+        raise NetatmoBudgetError("Netatmo rate limit reached (HTTP 429), using cached data.")
+
     def _request_token(self, client_id, secret, refresh_token):
+        self._spend()
         try:
             return self._session.post(
                 TOKEN_URL,
@@ -151,8 +168,8 @@ class NetatmoClient:
 
             client_id, secret, env_refresh = self._credentials(device_config)
 
-            # Le cache n'est valable que pour la même application et tant que
-            # l'utilisateur n'a pas collé un nouveau refresh_token dans .env.
+            # The cache is only valid for the same application and as long as
+            # the user has not pasted a new refresh_token into .env.
             if (self._token.get("client_id") != client_id
                     or self._token.get("env_refresh_token") != env_refresh):
                 self._token = {}
@@ -170,11 +187,13 @@ class NetatmoClient:
             res = None
             for refresh in candidates:
                 res = self._request_token(client_id, secret, refresh)
+                if res.status_code == 429:
+                    self._rate_limited()
                 if res.status_code == 200:
                     used = refresh
                     break
                 if res.status_code not in (400, 401, 403):
-                    break  # panne côté Netatmo : inutile d'essayer l'autre jeton
+                    break  # Netatmo outage: no use trying the other token
             else:
                 used = None
 
@@ -215,9 +234,10 @@ class NetatmoClient:
     # -------------------------------------------------------------------- API
 
     def _get(self, url, device_config, params=None, timeout=10):
-        """GET authentifié, avec un renouvellement de jeton sur 401/403."""
+        """Authenticated GET with automatic token refresh on 401/403."""
         token = self.get_access_token(device_config)
         for attempt in (1, 2):
+            self._spend()
             try:
                 res = self._session.get(
                     url, headers={"Authorization": f"Bearer {token}"},
@@ -225,13 +245,15 @@ class NetatmoClient:
                 )
             except requests.exceptions.RequestException as e:
                 raise NetatmoError(f"Network error while contacting Netatmo: {e}") from e
+            if res.status_code == 429:
+                self._rate_limited()
             if res.status_code in (401, 403) and attempt == 1:
                 token = self.get_access_token(device_config, force=True)
                 continue
             return res
 
     def get_station(self, device_config, station_name=""):
-        """Retourne le dict d'une station (la première, ou celle dont le nom correspond)."""
+        """Returns the dictionary for a station (first match or matching name)."""
         res = self._get(STATIONS_URL, device_config)
         if res.status_code != 200:
             raise NetatmoError(f"Netatmo API error ({res.status_code}): {_api_error_text(res)}")
@@ -250,35 +272,47 @@ class NetatmoClient:
                 names = (dev.get("station_name"), dev.get("home_name"), dev.get("module_name"))
                 if any(n and n.strip().lower() == wanted for n in names):
                     return dev
-            logger.warning("Station Netatmo '%s' introuvable, utilisation de la première.", station_name)
+            logger.warning("Netatmo station '%s' not found, using the first one.", station_name)
         return devices[0]
 
     def get_temperature_history(self, device_config, device_id, module_id=None, hours=24):
-        """Températures horaires des dernières heures : liste de (timestamp, °C)."""
+        """Hourly temperatures for the past hours: list of (timestamp, °C)."""
+        return self.get_history(device_config, device_id, module_id, "temperature", hours)
+
+    def get_rain_history(self, device_config, device_id, module_id, hours=24):
+        """Hourly measured rainfall: list of (timestamp, mm)."""
+        return self.get_history(device_config, device_id, module_id, "sum_rain", hours)
+
+    def get_history(self, device_config, device_id, module_id, measure, hours=24):
+        """Hourly measurements for `measure` (getmeasure): sorted list of (timestamp, value).
+
+        Returns None on failure (network error, rate limit...) so the caller retains
+        cached data, and [] if Netatmo simply has no data.
+        """
         if not device_id:
             return []
         end = int(time.time())
         params = {
             "device_id": device_id,
             "scale": "1hour",
-            "type": "temperature",
+            "type": measure,
             "date_begin": end - hours * 3600,
             "date_end": end,
             "optimize": "false",
-            "real_time": "true",  # horodatage au milieu de l'intervalle
+            "real_time": "true",  # timestamp in the middle of interval
         }
         if module_id:
             params["module_id"] = module_id
         try:
             res = self._get(MEASURE_URL, device_config, params=params, timeout=10)
             if res.status_code != 200:
-                logger.warning("getmeasure Netatmo : HTTP %s", res.status_code)
-                return []
+                logger.warning("Netatmo getmeasure: HTTP %s", res.status_code)
+                return None
             payload = res.json()
             body = payload.get("body") if isinstance(payload, dict) else None
         except (NetatmoError, ValueError) as e:
-            logger.warning("Historique Netatmo indisponible : %s", e)
-            return []
+            logger.warning("Netatmo history unavailable: %s", e)
+            return None
 
         points = []
         if isinstance(body, dict):

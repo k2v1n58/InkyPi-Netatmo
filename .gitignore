@@ -1,3 +1,6 @@
 token_cache.json
+call_budget.json
+data_cache.json
 *.tmp
 __pycache__/
+.pytest_cache/

@@ -1,8 +1,8 @@
 @charset "utf-8";
 /* =========================================================================
-   Netatmo pour InkyPi : thème e-ink (fort contraste, hiérarchie nette).
-   Toutes les tailles sont en rem ; 1rem = 10px sur un écran 800x480 et la
-   taille suit la résolution, en paysage comme en portrait.
+   Netatmo for InkyPi: E-Ink theme (high contrast, clear hierarchy).
+   All units are in rem; 1rem = 10px on an 800x480 screen, scaling
+   with resolution in both landscape and portrait orientations.
    ========================================================================= */
 
 :root {
@@ -12,7 +12,7 @@
     --ink-3: #666;
     --line: #8a8a8a;
     --soft: #f1f1f1;
-    /* Couleurs saturees : nettes sur e-ink couleur, gris distincts en noir et blanc. */
+    /* Saturated colors: crisp on color E-Ink, distinct grays on monochrome. */
     --warm: #d9480f;
     --cool: #1c5fd4;
     --good: #1f7a3d;
@@ -51,7 +51,7 @@ body {
 
 .dim { color: var(--ink-3); font-weight: 500; }
 
-/* ---------- Barre d'information ---------- */
+/* ---------- Information Bar ---------- */
 .meta-bar {
     display: flex;
     justify-content: flex-end;
@@ -74,7 +74,7 @@ body {
 .ico-moon { width: 1.6rem; height: 1.6rem; vertical-align: middle; }
 .stat-moon dd { display: flex; align-items: center; gap: 0.4rem; }
 
-/* ---------- Cartes ---------- */
+/* ---------- Cards ---------- */
 .card {
     background: #fff;
     border: 0.15rem solid var(--line);
@@ -109,7 +109,7 @@ body {
 .big { font-weight: 900; line-height: 1; }
 .unit { font-weight: 600; color: var(--ink-2); }
 
-/* ---------- Section "aujourd'hui" ---------- */
+/* ---------- "Today" Section ---------- */
 .today {
     flex: 1.5;
     min-height: 0;
@@ -155,7 +155,7 @@ body {
 .stats dt { color: var(--ink-3); font-weight: 600; }
 .stats dd { margin: 0; font-weight: 800; text-align: right; }
 
-/* Vent & pluie */
+/* Wind & Rain */
 .card-wr { justify-content: space-around !important; border-color: var(--cool); }
 .card-wr .card-title { color: var(--cool); }
 .card-wr .badge { border-color: var(--cool); }
@@ -168,7 +168,7 @@ body {
 .sub strong { color: var(--ink); font-weight: 800; }
 .divider { height: 0.1rem; background: #c8c8c8; }
 
-/* Graphique */
+/* Graph */
 .graph-body { flex: 1; min-height: 3rem; display: flex; margin: 0.4rem 0 0.2rem; }
 .sparkline-svg { width: 100%; height: 100%; display: block; }
 .graph-foot {
@@ -195,7 +195,7 @@ body {
 .lg-solid { border-top: 0.25rem solid var(--warm); }
 .lg-dash { border-top: 0.22rem dashed var(--cool); }
 
-/* ---------- Prévisions ---------- */
+/* ---------- Forecast ---------- */
 .forecast { flex: 0.95; min-height: 0; display: flex; gap: 0.6rem; }
 .day {
     flex: 1;
@@ -214,7 +214,7 @@ body {
 .day-temps span:last-child { color: var(--cool); font-weight: 700; }
 .day-rain { font-size: 1rem; font-weight: 800; color: var(--cool); line-height: 1; }
 
-/* ---------- Intérieur ---------- */
+/* ---------- Indoor ---------- */
 .indoor { flex: 1.1; min-height: 0; display: flex; flex-direction: column; gap: 0.3rem; }
 .section-title {
     font-size: 1.1rem;
@@ -262,7 +262,7 @@ body {
 .co2-good { color: var(--good); }
 .ico-xs { width: 1.2rem; height: 1.2rem; }
 
-/* CO2 : lisible sans couleur (souligné = moyen, inversé = mauvais) */
+/* CO2: legible without color (underlined = fair, inverted = poor) */
 .co2-fair { color: var(--warm); text-decoration: underline; text-underline-offset: 0.2rem; }
 .co2-poor { background: var(--bad); color: #fff; padding: 0 0.4rem; border-radius: 0.3rem; font-weight: 900; }
 
@@ -283,7 +283,7 @@ img { image-rendering: auto; }
     .card-hero { grid-column: 1 / -1; }
     .card-hero .hero-val { font-size: 7rem; }
     .card-hero .hero-icon { height: 7rem; width: 7rem; }
-    /* un seul bloc (vent ou pluie, ou graphique seul) : pleine largeur */
+    /* Single block (wind or rain, or standalone graph): full width */
     .today > .card:last-child:nth-child(even) { grid-column: 1 / -1; }
     .forecast { flex: 0.8; }
     .indoor { flex: 1.4; }
@@ -292,7 +292,7 @@ img { image-rendering: auto; }
     .room:last-child:nth-child(odd) { grid-column: 1 / -1; }
 }
 
-/* repères du graphique (posés en HTML pour ne pas être déformés) */
+/* Graph markers (positioned via HTML to prevent distortion) */
 .graph-body { position: relative; }
 .gmark { position: absolute; transform: translate(-50%, -50%); line-height: 1; white-space: nowrap; }
 .gmark i { display: block; width: 0.9rem; height: 0.9rem; border-radius: 50%; background: #fff; border: 0.22rem solid var(--warm); }
@@ -305,7 +305,7 @@ img { image-rendering: auto; }
 .graph-foot span:nth-child(2), .graph-foot span:nth-child(4) { opacity: 0.7; }
 .rain-note { color: var(--cool); }
 
-/* étiquette « Now » : côté opposé à la courbe */
+/* "Now" marker label: opposite side of incoming curve */
 .gmark-now.gpos-upleft b { transform: translate(-118%, -150%); }
 .gmark-now.gpos-downleft b { transform: translate(-118%, 50%); }
 .gmark-now.gpos-up b { transform: translate(-50%, -190%); }

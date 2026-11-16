@@ -46,7 +46,7 @@ def test_refresh_and_cache(client, tmp_path, monkeypatch):
 
     monkeypatch.setattr(client._session, "post", post)
     assert client.get_access_token(Cfg(ENV)) == "AT"
-    assert client.get_access_token(Cfg(ENV)) == "AT"  # servi depuis le cache
+    assert client.get_access_token(Cfg(ENV)) == "AT"  # served from cache
     assert calls == ["env-rt"]
     saved = json.loads((tmp_path / "token_cache.json").read_text())
     assert saved["refresh_token"] == "new-rt"
@@ -115,8 +115,62 @@ def test_station_selection_and_history(client, monkeypatch):
                         lambda *a, **k: Resp(200, {"body": {"200": [3.5], "100": [2.0], "300": [None]}}))
     assert client.get_temperature_history(None, "a", "m") == [(100, 2.0), (200, 3.5)]
     monkeypatch.setattr(client, "_get", lambda *a, **k: Resp(500))
-    assert client.get_temperature_history(None, "a") == []
+    assert client.get_temperature_history(None, "a") is None  # échec : l'appelant garde son cache
 
     monkeypatch.setattr(client, "_get", lambda *a, **k: Resp(200, {"body": {"devices": []}}))
     with pytest.raises(api.NetatmoError, match="No Netatmo"):
         client.get_station(None)
+
+
+# ----------------------------------------------------------------- Call budget
+
+def test_budget_blocks_fifth_call_in_the_hour(tmp_path):
+    from netatmo_plugin.budget import CallBudget
+
+    b = CallBudget(str(tmp_path / "b.json"), max_calls=4)
+    t0 = 1_000_000
+    assert all(b.try_acquire(now=t0 + i * 60) for i in range(4))
+    assert not b.try_acquire(now=t0 + 600)
+    assert b.seconds_until_free(now=t0 + 600) == 3000 + 1
+    assert b.try_acquire(now=t0 + 3601)                      # First call has exited the window
+    # Counter persists across restarts
+    again = CallBudget(str(tmp_path / "b.json"), max_calls=4)
+    assert again.remaining(now=t0 + 3602) == 0
+
+
+def test_client_respects_budget_and_429(client, monkeypatch, tmp_path):
+    from netatmo_plugin.budget import CallBudget
+
+    client.budget = CallBudget(str(tmp_path / "budget.json"), max_calls=4)
+    posts, gets = [], []
+    monkeypatch.setattr(client._session, "post", lambda url, data, timeout: posts.append(1) or Resp(
+        200, {"access_token": "AT", "refresh_token": "rt", "expires_in": 10800}))
+    monkeypatch.setattr(client._session, "get", lambda *a, **k: gets.append(1) or Resp(
+        200, {"body": {"devices": [{"_id": "x"}]}}))
+    for _ in range(3):
+        client.get_station(Cfg(ENV))                        # 1 token + 3 stations = 4 calls
+    with pytest.raises(api.NetatmoBudgetError):
+        client.get_station(Cfg(ENV))
+    assert len(posts) + len(gets) == 4
+
+    client.budget = CallBudget(str(tmp_path / "budget2.json"), max_calls=4)
+    monkeypatch.setattr(client._session, "get", lambda *a, **k: Resp(429, {"error": {"message": "rate"}}))
+    with pytest.raises(api.NetatmoBudgetError, match="429"):
+        client.get_station(Cfg(ENV))
+    assert client.budget.remaining() == 0                   # No calls remaining until the window resets
+
+
+def test_remaining_at_keeps_a_slot_for_the_next_station_refresh(tmp_path):
+    from netatmo_plugin.budget import CallBudget
+
+    b = CallBudget(str(tmp_path / "b.json"), max_calls=4)
+    t0 = 1_000_000
+    for dt in (0, 1320, 2640):                               # 3 station readings in 44 min
+        assert b.try_acquire(now=t0 + dt)
+    now = t0 + 2700
+    next_station = t0 + 2640 + 1320
+    # Would requesting history now take the last available slot at next refresh? No:
+    # at t0+3960, the t0 call has exited the window -> a slot remains
+    assert b.remaining_at(next_station, extra=1, now=now) >= 1
+    # But not if the next refresh happens before the t0 call expires
+    assert b.remaining_at(t0 + 3000, extra=1, now=now) == 0

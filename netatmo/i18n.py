@@ -1,4 +1,4 @@
-"""Chargement des traductions du plugin Netatmo."""
+"""Translation loader for the Netatmo plugin."""
 
 import json
 import logging
@@ -24,12 +24,12 @@ def _read(lang):
         with open(os.path.join(I18N_DIR, f"{lang}.json"), "r", encoding="utf-8") as f:
             return json.load(f)
     except (OSError, ValueError) as e:
-        logger.warning("Traduction '%s' illisible : %s", lang, e)
+        logger.warning("Translation '%s' unreadable: %s", lang, e)
         return {}
 
 
 def load_translations(lang="en"):
-    """Traductions de `lang`, complétées par l'anglais pour les clés manquantes."""
+    """Translations for `lang`, falling back to English for any missing keys."""
     if lang not in LANGUAGES:
         lang = "en"
     if lang in _CACHE:

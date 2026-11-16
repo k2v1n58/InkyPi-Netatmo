@@ -1,6 +1,6 @@
-"""Fonctions utilitaires pures (formatage, unités, lune, point de rosée, Open-Meteo, graphique).
+"""Pure utility functions (formatting, units, moon, dew point, Open-Meteo, charts).
 
-Aucune dépendance à InkyPi ici : ce module est testable de façon isolée.
+No dependencies on InkyPi here: this module is isolated and unit-testable.
 """
 
 import logging
@@ -18,8 +18,8 @@ OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 
 TREND_SYMBOLS = {"up": "↑", "down": "↓", "stable": "→"}
 
-# Unités d'affichage. L'API Netatmo renvoie toujours des valeurs métriques,
-# la conversion est faite ici.
+# Display units. Netatmo API always returns metric values;
+# unit conversion is handled here.
 UNIT_LABELS = {
     "metric": {"temp": "°C", "wind": "km/h", "pressure": "hPa", "rain": "mm"},
     "imperial": {"temp": "°F", "wind": "mph", "pressure": "inHg", "rain": "in"},
@@ -27,11 +27,11 @@ UNIT_LABELS = {
 
 
 # ---------------------------------------------------------------------------
-# Paramètres
+# Settings
 # ---------------------------------------------------------------------------
 
 def is_enabled(settings, key, default=False):
-    """Interprète une case à cocher du formulaire ('true'/'false', bool, absente)."""
+    """Interprets a form checkbox ('true'/'false', bool, missing)."""
     val = settings.get(key)
     if val is None:
         return default
@@ -39,13 +39,13 @@ def is_enabled(settings, key, default=False):
 
 
 def setting_str(settings, key):
-    """Valeur texte d'un paramètre, jamais None."""
+    """String value of a setting, never None."""
     val = settings.get(key)
     return str(val).strip() if val is not None else ""
 
 
 def parse_coordinates(lat, lon):
-    """Retourne (lat, lon) en float ou None si invalides / hors limites."""
+    """Returns (lat, lon) as floats or None if invalid / out of bounds."""
     try:
         lat_f = float(str(lat).strip().replace(",", "."))
         lon_f = float(str(lon).strip().replace(",", "."))
@@ -57,9 +57,9 @@ def parse_coordinates(lat, lon):
 
 
 def station_coordinates(device):
-    """Coordonnées (lat, lon) de la station Netatmo, ou None.
+    """Coordinates (lat, lon) of the Netatmo station, or None.
 
-    L'API renvoie `place.location` au format GeoJSON : [longitude, latitude].
+    The API returns `place.location` in GeoJSON format: [longitude, latitude].
     """
     location = ((device or {}).get("place") or {}).get("location")
     if isinstance(location, (list, tuple)) and len(location) >= 2:
@@ -68,11 +68,11 @@ def station_coordinates(device):
 
 
 # ---------------------------------------------------------------------------
-# Formatage et conversions
+# Formatting and conversions
 # ---------------------------------------------------------------------------
 
 def to_float(val):
-    """float(val) ou None."""
+    """float(val) or None."""
     if val is None:
         return None
     try:
@@ -93,7 +93,7 @@ def fmt_int(val, fallback="--"):
 
 
 def resolve_units(setting, device=None):
-    """'metric' ou 'imperial'. 'auto' suit les préférences du compte Netatmo."""
+    """'metric' or 'imperial'. 'auto' follows Netatmo account preferences."""
     if setting in ("metric", "imperial"):
         return setting
     admin = (device or {}).get("administrative") or {}
@@ -143,7 +143,7 @@ def fmt_rain(mm, units):
 
 
 def co2_status(co2):
-    """good / fair / poor / unknown selon la concentration en ppm."""
+    """good / fair / poor / unknown depending on CO2 ppm level."""
     c = to_float(co2)
     if c is None:
         return "unknown"
@@ -155,7 +155,7 @@ def co2_status(co2):
 
 
 def calculate_dew_point(temp_c, humidity):
-    """Point de rosée en °C (Magnus-Tetens), None si non calculable."""
+    """Dew point in °C (Magnus-Tetens formula), None if calculation fails."""
     t = to_float(temp_c)
     rh = to_float(humidity)
     if t is None or rh is None or rh <= 0 or rh > 100:
@@ -165,22 +165,47 @@ def calculate_dew_point(temp_c, humidity):
     return round((b * alpha) / (a - alpha), 1)
 
 
+def feels_like(temp_c, humidity=None, wind_kmh=None):
+    """Apparent temperature in °C (wind chill or heat index).
+
+    - Cold and windy (T <= 10 °C, wind > 4.8 km/h): wind chill formula
+      used by Environment Canada and NOAA.
+    - Hot and humid (T >= 27 °C, RH >= 40%): Rothfusz heat index (NOAA).
+    - Otherwise: measured temperature.
+    """
+    t = to_float(temp_c)
+    if t is None:
+        return None
+    v = to_float(wind_kmh)
+    rh = to_float(humidity)
+    if v is not None and t <= 10 and v > 4.8:
+        p = v ** 0.16
+        return 13.12 + 0.6215 * t - 11.37 * p + 0.3965 * t * p
+    if rh is not None and t >= 27 and rh >= 40:
+        f = t * 9 / 5 + 32
+        hi = (-42.379 + 2.04901523 * f + 10.14333127 * rh - 0.22475541 * f * rh
+              - 0.00683783 * f * f - 0.05481717 * rh * rh + 0.00122874 * f * f * rh
+              + 0.00085282 * f * rh * rh - 0.00000199 * f * f * rh * rh)
+        return (hi - 32) * 5 / 9
+    return t
+
+
 def get_cardinal(degrees, cardinals):
-    """Angle en degrés -> direction cardinale (16 points)."""
+    """Angle in degrees -> cardinal wind direction (16 points)."""
     deg = to_float(degrees)
-    if deg is None or deg < 0 or not cardinals or len(cardinals) < 16:  # -1 = vent calme
+    if deg is None or deg < 0 or not cardinals or len(cardinals) < 16:  # -1 = calm wind
         return ""
     return cardinals[int((deg % 360 + 11.25) / 22.5) % 16]
 
 
 # ---------------------------------------------------------------------------
-# Lune
+# Moon
 # ---------------------------------------------------------------------------
 
 SYNODIC_MONTH = 29.53058770576
 
 def get_moon_phase(dt=None, moon_phases=None):
-    """Phase lunaire : nom, illumination (%) et âge en jours."""
+    """Lunar phase: name, illumination (%), and age in days."""
     if dt is None:
         dt = datetime.now(timezone.utc)
     elif dt.tzinfo is None:
@@ -202,7 +227,7 @@ def get_moon_phase(dt=None, moon_phases=None):
 # ---------------------------------------------------------------------------
 
 def fetch_open_meteo(lat, lon, units="metric", timeout=10):
-    """Interroge Open-Meteo. Retourne le JSON brut ou None en cas d'échec."""
+    """Queries Open-Meteo. Returns raw JSON or None on failure."""
     params = {
         "latitude": lat,
         "longitude": lon,
@@ -219,15 +244,15 @@ def fetch_open_meteo(lat, lon, units="metric", timeout=10):
         res.raise_for_status()
         return res.json()
     except (requests.exceptions.RequestException, ValueError) as e:
-        logger.warning("Open-Meteo indisponible : %s", e)
+        logger.warning("Open-Meteo unavailable: %s", e)
         return None
 
 
 def parse_forecast(data, days_abbr, weather_codes, today_label="Today"):
-    """Transforme le JSON Open-Meteo en jours de prévision.
+    """Transforms Open-Meteo JSON into forecast day structures.
 
-    Les températures restent dans l'unité demandée à l'API.
-    Retourne (liste_de_jours, icône_actuelle_ou_None).
+    Temperatures remain in the units requested from the API.
+    Returns (days_list, current_icon_or_None).
     """
     daily = (data or {}).get("daily") or {}
     times = daily.get("time") or []
@@ -274,21 +299,21 @@ def _zone(name):
     try:
         from zoneinfo import ZoneInfo
         return ZoneInfo(name) if name else None
-    except Exception:  # fuseau inconnu ou base tzdata absente
+    except Exception:  # Unknown timezone or tzdata missing
         return None
 
 
 def _local_to_utc_ts(local, zone, offset):
-    """Heure locale naïve -> timestamp UTC, en tenant compte des changements d'heure."""
+    """Naive local datetime -> UTC timestamp, taking DST into account."""
     if zone is not None:
         return int(local.replace(tzinfo=zone).timestamp())
     return int((local.replace(tzinfo=timezone.utc) - timedelta(seconds=offset)).timestamp())
 
 
 def upcoming_hourly(data, hours=24):
-    """Prévisions horaires à partir de l'heure courante (et non de minuit).
+    """Hourly forecast starting from current hour (not midnight).
 
-    Retourne (liste de (timestamp_utc, temp), liste de (timestamp_utc, mm)).
+    Returns (list of (timestamp_utc, temp), list of (timestamp_utc, mm)).
     """
     hourly = (data or {}).get("hourly") or {}
     times = hourly.get("time") or []
@@ -321,17 +346,16 @@ def upcoming_hourly(data, hours=24):
 
 
 # ---------------------------------------------------------------------------
-# Graphique
+# Chart / Sparkline
 # ---------------------------------------------------------------------------
 
 def merge_current_reading(history, now_ts, current, guard=1800):
-    """Raccorde l'historique horaire à la mesure instantanée, placée sur « Now ».
+    """Bridges hourly history with live instantaneous reading placed at 'Now'.
 
-    `getmeasure` (échelle 1hour) renvoie des moyennes horaires : la dernière
-    date de 0 à 60 min et diffère de la température affichée sur la carte.
-    On retire donc les moyennes des `guard` dernières secondes et on ajoute la
-    valeur courante du module à l'instant présent : le point du graphique est
-    alors identique à la valeur de la carte et tombe exactement sur « Now ».
+    `getmeasure` (1hour scale) returns hourly averages: the latest is 0 to 60 min old
+    and differs from the real-time temperature shown on cards. We strip averages
+    from the last `guard` seconds and append the live module value at the current
+    timestamp, ensuring the chart point aligns with the card reading right at 'Now'.
     """
     merged = [(ts, v) for ts, v in history if v is not None and ts <= now_ts - guard]
     if current is not None:
@@ -339,21 +363,20 @@ def merge_current_reading(history, now_ts, current, guard=1800):
     return merged
 
 
-COLOR_PAST = "#d9480f"    # orange : mesures Netatmo
-COLOR_FUTURE = "#1c5fd4"  # bleu : prévisions
+COLOR_PAST = "#d9480f"    # Orange: Netatmo measured readings
+COLOR_FUTURE = "#1c5fd4"  # Blue: Open-Meteo forecasts
 
 
 def build_sparkline(past, future, now_ts, precip=None, width=240, height=90, span_hours=24):
-    """Construit le graphique -24h -> maintenant -> +24h.
+    """Builds the -24h -> now -> +24h temperature and precipitation sparkline.
 
-    past / future : listes de (timestamp_utc, valeur) déjà converties.
-    precip        : liste de (timestamp_utc, mm) des pluies prévues (barres).
-    Les positions X sont proportionnelles au temps réel. Le SVG est étiré
-    (preserveAspectRatio=none) : il ne contient que des traits ; les points et
-    les valeurs sont renvoyés en pourcentages (`markers`) pour être posés en
-    HTML sans déformation.
+    past / future : lists of (timestamp_utc, value) already converted.
+    precip        : list of (timestamp_utc, mm) forecast rain bars.
+    X positions are proportional to real time. The SVG is stretched
+    (preserveAspectRatio=none): it contains lines only; marker points and labels
+    are returned as percentages (`markers`) to be rendered in HTML without distortion.
 
-    Retourne (svg, markers, valeur_min, valeur_max) ou ("", [], None, None).
+    Returns (svg, markers, min_value, max_value) or ("", [], None, None).
     """
     past = [p for p in past if p[1] is not None]
     future = [p for p in future if p[1] is not None and p[0] > now_ts]
@@ -378,7 +401,7 @@ def build_sparkline(past, future, now_ts, precip=None, width=240, height=90, spa
     stroke = 'vector-effect="non-scaling-stroke"'
     parts = []
 
-    # quadrillage : -12h / +12h, et repères min / max
+    # Gridlines: -12h / +12h, and min / max baselines
     for hours in (-12, 12):
         gx = round(pad_x + ratio(now_ts + hours * 3600) * inner_w, 1)
         parts.append(
@@ -391,7 +414,7 @@ def build_sparkline(past, future, now_ts, precip=None, width=240, height=90, spa
             f'stroke-dasharray="1,3" {stroke}/>'
         )
 
-    # pluie prévue : barres bleues le long du bas
+    # Forecast rain: blue bars along the bottom
     bars = [(ts, mm) for ts, mm in (precip or []) if mm is not None and mm >= 0.2]
     if bars:
         scale = max(max(mm for _, mm in bars), 2.0)
@@ -423,7 +446,7 @@ def build_sparkline(past, future, now_ts, precip=None, width=240, height=90, spa
         )
 
     if future_xy:
-        # la prévision démarre au dernier point mesuré : courbe continue
+        # Forecast starts at the last measured point for a continuous curve
         seq = ([past_xy[-1]] if past_xy else []) + future_xy
         if len(seq) >= 2:
             line = "M " + " L ".join(f"{x},{y}" for x, y in seq)
@@ -437,7 +460,7 @@ def build_sparkline(past, future, now_ts, precip=None, width=240, height=90, spa
         f'preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">{"".join(parts)}</svg>'
     )
 
-    # ---- repères HTML : valeur actuelle, maximum et minimum
+    # HTML markers: current reading, maximum, and minimum
     def marker(kind, ts, val, decimals):
         x, y = xy(ts, val)
         return {
@@ -451,9 +474,9 @@ def build_sparkline(past, future, now_ts, precip=None, width=240, height=90, spa
     now_marker = None
     if past:
         now_marker = marker("now", past[-1][0], past[-1][1], 1)
-        # étiquette du côté opposé à la courbe qui arrive sur le point
+        # Place label opposite to incoming curve direction
         dy = past_xy[-1][1] - past_xy[-2][1] if len(past_xy) >= 2 else 0
-        low_in_plot = now_marker["y"] > 62  # point près du bas : pas de place dessous
+        low_in_plot = now_marker["y"] > 62  # Point near bottom: no room underneath
         if dy < -1.5:
             now_marker["pos"] = "upleft"
         elif dy > 1.5:
@@ -463,10 +486,10 @@ def build_sparkline(past, future, now_ts, precip=None, width=240, height=90, spa
         markers.append(now_marker)
 
     for kind, pick in (("max", max), ("min", min)):
-        ts, val = pick(reversed(past + future), key=lambda p: p[1])  # égalité : point le plus récent
+        ts, val = pick(reversed(past + future), key=lambda p: p[1])  # Tie-breaker: pick most recent point
         m = marker(kind, ts, val, 0)
         if now_marker and abs(m["x"] - now_marker["x"]) < 14 and abs(m["y"] - now_marker["y"]) < 22:
-            continue  # trop proche de la valeur actuelle
+            continue  # Too close to current value marker
         markers.append(m)
 
     return svg, markers, vmin, vmax

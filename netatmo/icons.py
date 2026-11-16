@@ -1,8 +1,8 @@
-"""Correspondance code météo / phase de lune -> fichier d'icône PNG.
+"""Mapping of weather codes and moon phases to PNG icon filenames.
 
-Les icônes (dossier icons/) sont les mêmes que celles du plugin météo
-d'InkyPi, pour un rendu cohérent. Les emojis ne sont pas utilisés : ils
-dépendent des polices du Raspberry Pi et s'affichent souvent en carrés vides.
+Icons in icons/ match InkyPi's built-in weather plugin for consistent
+rendering. Emojis are avoided because they depend on Raspberry Pi fonts
+and often render as empty squares.
 """
 
 _CODE_TO_ICON = {
@@ -24,7 +24,7 @@ _CODE_TO_ICON = {
     95: "11d", 96: "11d", 99: "11d",
 }
 
-# Seules ces icônes existent en version nuit.
+# Only these icons have night variants.
 _NIGHT_VARIANTS = {"01d": "01n", "022d": "022n", "02d": "02n"}
 
 _MOON_THRESHOLDS = [
@@ -49,7 +49,7 @@ _SOUTHERN_SWAP = {
 
 
 def weather_icon_name(wmo_code, is_day=True):
-    """Code WMO (Open-Meteo) -> nom du fichier icône (sans extension)."""
+    """WMO code (Open-Meteo) -> icon filename (without extension)."""
     try:
         icon = _CODE_TO_ICON.get(int(wmo_code), "01d")
     except (ValueError, TypeError):
@@ -60,7 +60,7 @@ def weather_icon_name(wmo_code, is_day=True):
 
 
 def moon_icon_name(age_days, latitude=None):
-    """Âge de la lune (jours) -> nom d'icône, inversé dans l'hémisphère sud."""
+    """Moon age (days) -> icon name, inverted in the Southern hemisphere."""
     name = "newmoon"
     for threshold, phase in _MOON_THRESHOLDS:
         if age_days <= threshold:

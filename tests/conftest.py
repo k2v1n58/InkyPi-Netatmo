@@ -1,4 +1,4 @@
-"""Charge le dossier `netatmo/` comme un paquet autonome (sans InkyPi)."""
+"""Loads the `netatmo/` folder as a standalone package (without InkyPi)."""
 
 import importlib.util
 import os

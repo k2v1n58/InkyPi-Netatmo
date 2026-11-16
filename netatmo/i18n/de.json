@@ -31,7 +31,8 @@
     "graph_past": "Gemessen",
     "graph_future": "Prognose",
     "rain_forecast_6h": "Nächste 6h",
-    "stale": "Offline - Cache-Daten"
+    "stale": "Offline - Cache-Daten",
+    "feels_like": "Gefühlt"
   },
   "days_abbr": [
     "Mo",

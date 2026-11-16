@@ -10,7 +10,6 @@
     <select id="theme" name="theme" class="form-input">
         <option value="classic">Classic (cards)</option>
         <option value="poster">Poster (big outdoor panel)</option>
-        <option value="minimal">Minimal (typography only)</option>
     </select>
 
     <label for="units" class="form-label">Units:</label>
@@ -79,8 +78,8 @@
 
 <script>
 (function () {
-    // Une case décochée n'est pas envoyée par le formulaire : chaque case est
-    // doublée d'un champ caché "true"/"false" pour que le plugin sache la lire.
+    // Unchecked checkboxes are not submitted by the browser form. Each checkbox
+    // is paired with a hidden input storing "true"/"false" so the plugin can read it.
     const flags = document.querySelectorAll('input[type="checkbox"][data-flag]');
     const settings = (typeof loadPluginSettings !== 'undefined' && loadPluginSettings) ? pluginSettings : {};
 
@@ -96,7 +95,7 @@
         hidden.value = cb.checked ? 'true' : 'false';
         cb.defaultChecked = cb.checked;
         cb.addEventListener('change', () => { hidden.value = cb.checked ? 'true' : 'false'; });
-        // InkyPi vide le formulaire (form.reset) après « Add to playlist » : on resynchronise.
+        // InkyPi clears the form (form.reset) after "Add to playlist": resynchronize.
         if (cb.form) cb.form.addEventListener('reset', () => setTimeout(() => { hidden.value = cb.checked ? 'true' : 'false'; }));
     });
 
