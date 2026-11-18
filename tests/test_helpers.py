@@ -148,10 +148,10 @@ def test_station_coordinates_use_geojson_order():
 
 def test_current_reading_sits_on_now_and_replaces_stale_hourly_average():
     now = 1_000_000
-    history = [(now - 7200, 8.0), (now - 3600, 9.0), (now - 600, 11.0)]  # dernière moyenne : 10 min
+    history = [(now - 7200, 8.0), (now - 3600, 9.0), (now - 600, 11.0)]  # last average: 10 min
     merged = h.merge_current_reading(history, now, 9.3)
     assert merged[-1] == (now, 9.3)
-    assert (now - 600, 11.0) not in merged  # moyenne trop récente retirée
+    assert (now - 600, 11.0) not in merged  # too-recent average removed
     assert len(merged) == 3
     _, markers, _, _ = h.build_sparkline(merged, [(now + 3600, 10.0)], now)
     now_marker = next(m for m in markers if m["kind"] == "now")
@@ -160,7 +160,7 @@ def test_current_reading_sits_on_now_and_replaces_stale_hourly_average():
 
 
 def test_moon_matches_meeus_reference_example():
-    """Meeus, « Astronomical Algorithms », exemple 48.a : 12 avril 1992 0 h TD, k = 0,6786."""
+    """Meeus, 'Astronomical Algorithms', example 48.a: 12 April 1992 0h TD, k = 0.6786."""
     from netatmo_plugin.moon import moon_illumination
 
     k, _, waxing = moon_illumination(datetime(1992, 4, 11, 23, 59, 1, tzinfo=timezone.utc))

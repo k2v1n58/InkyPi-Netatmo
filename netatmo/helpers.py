@@ -405,13 +405,13 @@ def build_sparkline(past, future, now_ts, precip=None, width=240, height=90, spa
     for hours in (-12, 12):
         gx = round(pad_x + ratio(now_ts + hours * 3600) * inner_w, 1)
         parts.append(
-            f'<line x1="{gx}" y1="0" x2="{gx}" y2="{height}" stroke="#d4d4d4" stroke-width="1" {stroke}/>'
+            f'<line x1="{gx}" y1="0" x2="{gx}" y2="{height}" stroke="#b8b8b8" stroke-width="1.2" {stroke}/>'
         )
     for val in (vmin, vmax):
         _, gy = xy(now_ts, val)
         parts.append(
-            f'<line x1="0" y1="{gy}" x2="{width}" y2="{gy}" stroke="#bbb" stroke-width="1" '
-            f'stroke-dasharray="1,3" {stroke}/>'
+            f'<line x1="0" y1="{gy}" x2="{width}" y2="{gy}" stroke="#888" stroke-width="1.2" '
+            f'stroke-dasharray="3,3" {stroke}/>'
         )
 
     # Forecast rain: blue bars along the bottom
@@ -430,7 +430,7 @@ def build_sparkline(past, future, now_ts, precip=None, width=240, height=90, spa
     now_x = round(pad_x + 0.5 * inner_w, 1)
     parts.append(
         f'<line x1="{now_x}" y1="0" x2="{now_x}" y2="{height}" stroke="#000" '
-        f'stroke-width="1" stroke-dasharray="3,2" {stroke}/>'
+        f'stroke-width="1.6" stroke-dasharray="4,3" {stroke}/>'
     )
 
     past_xy = [xy(ts, v) for ts, v in past]
@@ -441,7 +441,7 @@ def build_sparkline(past, future, now_ts, precip=None, width=240, height=90, spa
         area = f"{line} L {past_xy[-1][0]},{height} L {past_xy[0][0]},{height} Z"
         parts.append(f'<path d="{area}" fill="{COLOR_PAST}" fill-opacity="0.16" stroke="none"/>')
         parts.append(
-            f'<path d="{line}" fill="none" stroke="{COLOR_PAST}" stroke-width="2.6" '
+            f'<path d="{line}" fill="none" stroke="{COLOR_PAST}" stroke-width="3.4" '
             f'stroke-linejoin="round" stroke-linecap="round" {stroke}/>'
         )
 
@@ -451,7 +451,7 @@ def build_sparkline(past, future, now_ts, precip=None, width=240, height=90, spa
         if len(seq) >= 2:
             line = "M " + " L ".join(f"{x},{y}" for x, y in seq)
             parts.append(
-                f'<path d="{line}" fill="none" stroke="{COLOR_FUTURE}" stroke-width="2.4" '
+                f'<path d="{line}" fill="none" stroke="{COLOR_FUTURE}" stroke-width="3.0" '
                 f'stroke-dasharray="5,4" stroke-linejoin="round" {stroke}/>'
             )
 
